@@ -1,0 +1,18 @@
+# local output
+*.json
+!data/*.json
+*.txt
+*.zip
+
+# copied save data - never commit someone's save
+saves/
+samples/
+*.sav
+containers.index
+
+# editors
+.vscode/
+.idea/
+
+# local working notes for AI coding assistants - not part of the published project
+CLAUDE.md

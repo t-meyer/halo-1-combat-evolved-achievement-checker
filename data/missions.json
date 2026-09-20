@@ -1,0 +1,25 @@
+{
+  "$comment": "Mission ids as used by Halo: Campaign Evolved in its gameplay tags. Verified against a 100% save: the 13 ids below are exactly the set that appears under Blam.Progress.Mission.Completion.*",
+  "game": "Halo: Campaign Evolved",
+  "titleId": "2082978535",
+  "missions": [
+    { "id": "a15", "name": "The Pillar of Autumn",        "kind": "main",  "verified": true  },
+    { "id": "a30", "name": "Halo",                        "kind": "main",  "verified": true  },
+    { "id": "a50", "name": "The Truth and Reconciliation","kind": "main",  "verified": true  },
+    { "id": "b30", "name": "The Silent Cartographer",     "kind": "main",  "verified": true  },
+    { "id": "b40", "name": "Assault on the Control Room", "kind": "main",  "verified": true  },
+    { "id": "c10", "name": "343 Guilty Spark",            "kind": "main",  "verified": true  },
+    { "id": "c20", "name": "The Library",                 "kind": "main",  "verified": true  },
+    { "id": "c40", "name": "Two Betrayals",               "kind": "main",  "verified": true  },
+    { "id": "d20", "name": "Keyes",                       "kind": "main",  "verified": true  },
+    { "id": "d40", "name": "The Maw",                     "kind": "main",  "verified": true  },
+    { "id": "e10", "name": "Bonus mission (e10)",         "kind": "bonus", "verified": false },
+    { "id": "e20", "name": "Bonus mission (e20)",         "kind": "bonus", "verified": false },
+    { "id": "e30", "name": "Bonus mission (e30)",         "kind": "bonus", "verified": false }
+  ],
+  "openQuestions": [
+    "The three bonus missions are Boarding Action, The Most Dangerous Game and Heavy Burden, but the mapping to e10/e20/e30 is not confirmed. Insertion point names hint at e30 = Boarding Action (ins_e30_space_1, ins_e30_grav_lift, ins_e30_transit_station).",
+    "c45 appears under Completion.unlock_c45 and in insertion points, but never under a difficulty completion tag. Probably a sub-section rather than a standalone mission.",
+    "Terminals use terminal_a10 while mission completion uses a15 for the same first mission."
+  ]
+}
