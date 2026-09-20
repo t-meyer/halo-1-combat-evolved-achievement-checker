@@ -26,11 +26,11 @@ Read-only. Nothing is ever written to your save.
 
 For anyone who just wants to know which mission is missing:
 
-1. Get the files — on <https://github.com/ThiloMeyer/blamscan> click
+1. Get the files — on <https://github.com/t-meyer/blamscan> click
    **Code → Download ZIP**, or
 
    ```powershell
-   git clone https://github.com/ThiloMeyer/blamscan.git
+   git clone https://github.com/t-meyer/blamscan.git
    ```
 
 2. Open PowerShell in that folder and run

@@ -37,7 +37,7 @@
     .\blamscan.ps1 -Section Missions -Json progress.json
 
 .LINK
-    https://github.com/ThiloMeyer/blamscan
+    https://github.com/t-meyer/blamscan
 #>
 
 [CmdletBinding()]
