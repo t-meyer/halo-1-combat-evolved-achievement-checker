@@ -6,6 +6,18 @@ is missing. This finds it.**
 For **Halo: Campaign Evolved** — the Halo 1 / Combat Evolved remake. Windows
 only, nothing to install, and it never changes your save.
 
+## Does this sound familiar?
+
+- An achievement sits at 92% and will not unlock, and nothing tells you which
+  mission is left
+- You finished the campaign, but the achievement did not pop
+- `Mix Master` is stuck and replaying missions at random changes nothing
+- You want to know which missions you still owe on Heroic, on Legendary, on
+  Remix, or without dying
+- You are not sure which skulls and terminals you already have
+
+Then this is for you.
+
 ## The problem
 
 Some achievements need all thirteen campaign missions. `Mix Master`, for
@@ -110,6 +122,25 @@ Nothing here can damage your save — the tool contains no code that writes to i
 
 The heading line and the JSON export contain your XUID and your gamertag. The
 mission table itself does not. Copy just the table when you post it somewhere.
+
+## Auf Deutsch
+
+Kurzfassung für deutschsprachige Spieler: Wenn ein Achievement bei 92 % hängt
+und das Spiel nicht verrät, **welche Mission** noch fehlt, liest dieses Werkzeug
+deinen Spielstand aus und nennt sie beim Namen — auch für Heroisch, Legendär,
+Remix und "ohne zu sterben", dazu Schädel und Terminals.
+
+Du brauchst einen Windows-PC, auf dem du gespielt hast. Lade oben über den
+grünen **Code**-Knopf das ZIP herunter, entpacke es, öffne den Ordner, halte
+**Umschalt** gedrückt, rechtsklicke auf eine freie Stelle, wähle
+**PowerShell-Fenster hier öffnen** und tippe `.\halo` gefolgt von der
+**Tab**-Taste. Falls Windows sich weigert, einmal `Unblock-File` ausführen wie
+in Schritt 5 oben.
+
+Dein Spielstand wird ausschließlich gelesen, niemals verändert. Wichtig: die
+Datei **ausführen**, nicht den Skripttext ins Fenster hineinkopieren — sonst
+kommt die Meldung *"Das Argument kann nicht an den Parameter 'Path' gebunden
+werden"*.
 
 ## More options
 
