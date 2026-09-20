@@ -80,7 +80,10 @@ $FallbackMissions = @(
 # --- mission table ----------------------------------------------------------
 
 function Get-MissionTable {
-    $file = Join-Path $PSScriptRoot 'data\missions.json'
+    # $PSScriptRoot is empty when the script text is pasted into a console
+    # instead of being run as a file, and Join-Path rejects an empty -Path.
+    $base = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
+    $file = Join-Path $base 'data\missions.json'
     if (Test-Path $file) {
         try {
             $data = Get-Content $file -Raw -Encoding UTF8 | ConvertFrom-Json

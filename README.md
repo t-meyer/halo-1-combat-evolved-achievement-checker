@@ -52,7 +52,14 @@ Unblock-File .\halo-achievement-checker.ps1
 powershell -ExecutionPolicy Bypass -File .\halo-achievement-checker.ps1
 ```
 
-No installation, no dependencies, nothing is written anywhere.
+No installation, no dependencies, nothing is written anywhere. You do not need
+administrator rights.
+
+> **Run the file, do not paste its text into a PowerShell window.** Pasted code
+> has no script path of its own, so the tool cannot locate `data/missions.json`
+> and stops right away with *"Das Argument kann nicht an den Parameter 'Path'
+> gebunden werden"* / *"Cannot bind argument to parameter 'Path' because it is
+> an empty string"*.
 
 ## Requirements
 
