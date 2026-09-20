@@ -1,4 +1,4 @@
-# Contributing to Halo Achievement Checker
+# Contributing to Halo CE Achievement Checker
 
 The whole project exists because the game and the Xbox API only report a
 percentage. Every contribution that turns a number into a mission name is
@@ -8,7 +8,7 @@ worth having.
 
 1. **Confirm the bonus mission ids.** `e10`, `e20` and `e30` are Boarding
    Action, The Most Dangerous Game and Heavy Burden in some order. Finish one
-   of them, run `.\halo-achievement-checker.ps1 -Raw`, and see which id gained a completion
+   of them, run `.\halo-ce-achievement-checker.ps1 -Raw`, and see which id gained a completion
    tag. Then set the name and `"verified": true` in `data/missions.json`.
 2. **Skull and terminal lists.** The current lists come from a single save. If
    your save shows a `Blam.Skull.*` or `Blam.Terminal.*` tag that is not in
@@ -33,7 +33,7 @@ worth having.
 - **ASCII only in `.ps1` files.** PowerShell 5.1 and UTF-8 without BOM disagree
   about everything else. Markdown files may use whatever they like.
 - **Mission data belongs in `data/missions.json`**, not in the script. The table
-  inside `halo-achievement-checker.ps1` is only a fallback for when the JSON file is missing;
+  inside `halo-ce-achievement-checker.ps1` is only a fallback for when the JSON file is missing;
   if you change one, change both.
 - **File-format findings belong in `docs/SAVE-FORMAT.md`**, not in code
   comments.
@@ -43,7 +43,7 @@ worth having.
 There is no automated test suite. The manual check:
 
 ```powershell
-.\halo-achievement-checker.ps1            # against a save known to be at 100%
+.\halo-ce-achievement-checker.ps1            # against a save known to be at 100%
 ```
 
 All six completion columns must read 13/13. Against a partial save, the gaps
@@ -54,7 +54,7 @@ must line up with the percentage the game shows — each mission is worth
 
 Open an issue with:
 
-- the output of `.\halo-achievement-checker.ps1 -Raw` with XUID and gamertag removed
+- the output of `.\halo-ce-achievement-checker.ps1 -Raw` with XUID and gamertag removed
 - the game version string, which is near the start of the `Progress` blob
   (currently `++Meteorite+Rel-i343-Meteorite-2607-CU4`)
 - whether the game was played on this PC, on an Xbox console, or both

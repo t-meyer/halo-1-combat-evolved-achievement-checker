@@ -1,4 +1,4 @@
-# Halo Achievement Checker
+# Halo CE Achievement Checker
 
 Read your **Halo: Campaign Evolved** campaign progress straight out of the save
 file, and see exactly which missions each achievement is still waiting on.
@@ -22,23 +22,21 @@ reads the save and tells you.
 
 Read-only. Nothing is ever written to your save.
 
-_Previously published as `blamscan` — old links redirect here._
-
 ## Quick start
 
 For anyone who just wants to know which mission is missing:
 
-1. Get the files — on <https://github.com/t-meyer/halo-achievement-checker> click
+1. Get the files — on <https://github.com/t-meyer/halo-ce-achievement-checker> click
    **Code → Download ZIP**, or
 
    ```powershell
-   git clone https://github.com/t-meyer/halo-achievement-checker.git
+   git clone https://github.com/t-meyer/halo-ce-achievement-checker.git
    ```
 
 2. Open PowerShell in that folder and run
 
    ```powershell
-   .\halo-achievement-checker.ps1
+   .\halo-ce-achievement-checker.ps1
    ```
 
 3. Read the bottom of the table. The `completed` row is your progress per
@@ -48,8 +46,8 @@ For anyone who just wants to know which mission is missing:
 If Windows refuses to run a script you downloaded:
 
 ```powershell
-Unblock-File .\halo-achievement-checker.ps1
-powershell -ExecutionPolicy Bypass -File .\halo-achievement-checker.ps1
+Unblock-File .\halo-ce-achievement-checker.ps1
+powershell -ExecutionPolicy Bypass -File .\halo-ce-achievement-checker.ps1
 ```
 
 No installation, no dependencies, nothing is written anywhere. You do not need
@@ -71,22 +69,22 @@ keeps its save in the cloud, where there is no local file to read.
 
 ```powershell
 # everything the save knows
-.\halo-achievement-checker.ps1
+.\halo-ce-achievement-checker.ps1
 
 # just the mission matrix, plus a JSON dump
-.\halo-achievement-checker.ps1 -Section Missions -Json progress.json
+.\halo-ce-achievement-checker.ps1 -Section Missions -Json progress.json
 
 # one specific Xbox account on a shared PC
-.\halo-achievement-checker.ps1 -Account 2533274833271139
+.\halo-ce-achievement-checker.ps1 -Account 2533274833271139
 
 # a save folder copied off another PC, or a single save blob
-.\halo-achievement-checker.ps1 -SavePath D:\backup\wgs
+.\halo-ce-achievement-checker.ps1 -SavePath D:\backup\wgs
 
 # every gameplay tag in the file, unparsed
-.\halo-achievement-checker.ps1 -Raw
+.\halo-ce-achievement-checker.ps1 -Raw
 ```
 
-`Get-Help .\halo-achievement-checker.ps1 -Full` lists all parameters.
+`Get-Help .\halo-ce-achievement-checker.ps1 -Full` lists all parameters.
 
 > **Before you paste output into a forum:** the header line and the JSON export
 > contain your XUID and gamertag. The mission table itself does not — copy just

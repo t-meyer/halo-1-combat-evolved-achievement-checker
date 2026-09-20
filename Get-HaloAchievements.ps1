@@ -3,7 +3,7 @@
     List every Halo: Campaign Evolved achievement and its progress, from Xbox Live.
 
 .DESCRIPTION
-    Complements halo-achievement-checker.ps1: that one reads what the local save knows,
+    Complements halo-ce-achievement-checker.ps1: that one reads what the local save knows,
     this one reads what Xbox Live knows. Together they cover all 58
     achievements of the game.
 
@@ -143,7 +143,7 @@ foreach ($row in ($shown | Sort-Object @{ e = { $_.State -eq 'Achieved' } }, Nam
 
 Write-Host ''
 Write-Host 'Tip: for the Remix deathless achievement the percentage alone will not tell you' -ForegroundColor DarkGray
-Write-Host '     which mission is missing - run halo-achievement-checker.ps1 on that PC for the per-mission list.' -ForegroundColor DarkGray
+Write-Host '     which mission is missing - run halo-ce-achievement-checker.ps1 on that PC for the per-mission list.' -ForegroundColor DarkGray
 Write-Host ''
 
 if ($Json) {
