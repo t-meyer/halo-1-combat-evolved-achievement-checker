@@ -3,7 +3,7 @@
     List every Halo: Campaign Evolved achievement and its progress, from Xbox Live.
 
 .DESCRIPTION
-    Complements blamscan.ps1: that one reads what the local save knows,
+    Complements halo-achievement-checker.ps1: that one reads what the local save knows,
     this one reads what Xbox Live knows. Together they cover all 58
     achievements of the game.
 
@@ -16,7 +16,7 @@
 
 .PARAMETER ApiKey
     OpenXBL API key. Prompted for when omitted. Can also be set via the
-    BLAMSCAN_XBL_KEY environment variable.
+    HALO_XBL_KEY environment variable.
 
 .PARAMETER Gamertag
     Look up this gamertag instead of your own account.
@@ -56,7 +56,7 @@ $ErrorActionPreference = 'Stop'
 $TitleId = '2082978535'
 $ApiBase = 'https://xbl.io/api/v2'
 
-if (-not $ApiKey) { $ApiKey = $env:BLAMSCAN_XBL_KEY }
+if (-not $ApiKey) { $ApiKey = $env:HALO_XBL_KEY }
 if (-not $ApiKey) { $ApiKey = Read-Host 'OpenXBL API key' }
 
 $headers = @{ 'x-authorization' = $ApiKey; 'Accept' = 'application/json' }
@@ -143,7 +143,7 @@ foreach ($row in ($shown | Sort-Object @{ e = { $_.State -eq 'Achieved' } }, Nam
 
 Write-Host ''
 Write-Host 'Tip: for the Remix deathless achievement the percentage alone will not tell you' -ForegroundColor DarkGray
-Write-Host '     which mission is missing - run blamscan.ps1 on that PC for the per-mission list.' -ForegroundColor DarkGray
+Write-Host '     which mission is missing - run halo-achievement-checker.ps1 on that PC for the per-mission list.' -ForegroundColor DarkGray
 Write-Host ''
 
 if ($Json) {

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    blamscan - read campaign progress out of a Halo: Campaign Evolved save file.
+    halo-achievement-checker - read campaign progress out of a Halo: Campaign Evolved save.
 
 .DESCRIPTION
     Halo: Campaign Evolved (2026) stores per-mission progress as Unreal
@@ -8,7 +8,7 @@
     the Xbox achievement API only expose an aggregate percentage, so you can
     see that you are at 92% without knowing WHICH mission you still owe.
 
-    blamscan reads the save directly and prints the full matrix: difficulty
+    It reads the save directly and prints the full matrix: difficulty
     completions, Remix, Remix deathless, skulls and terminals - per Xbox
     account, per mission.
 
@@ -30,14 +30,14 @@
     Print every gameplay tag found, unparsed.
 
 .EXAMPLE
-    .\blamscan.ps1
+    .\halo-achievement-checker.ps1
     Autodetect and print everything.
 
 .EXAMPLE
-    .\blamscan.ps1 -Section Missions -Json progress.json
+    .\halo-achievement-checker.ps1 -Section Missions -Json progress.json
 
 .LINK
-    https://github.com/t-meyer/blamscan
+    https://github.com/t-meyer/halo-achievement-checker
 #>
 
 [CmdletBinding()]
@@ -280,7 +280,7 @@ $tagMap   = Get-GamertagMap
 $saves    = @(Get-AccountSaves -Root $root)
 
 Write-Host ''
-Write-Host 'blamscan - Halo: Campaign Evolved save reader' -ForegroundColor Cyan
+Write-Host 'Halo Achievement Checker - Campaign Evolved save reader' -ForegroundColor Cyan
 Write-Host "source: $root" -ForegroundColor DarkGray
 
 if ($saves.Count -eq 0) { Write-Host 'No save data found in that location.' -ForegroundColor Red; return }

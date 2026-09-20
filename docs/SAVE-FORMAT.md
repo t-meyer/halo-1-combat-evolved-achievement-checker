@@ -134,4 +134,4 @@ patches:
 Blam\.[A-Za-z0-9_.]+
 ```
 
-That is exactly what `blamscan.ps1` does.
+That is exactly what `halo-achievement-checker.ps1` does.
