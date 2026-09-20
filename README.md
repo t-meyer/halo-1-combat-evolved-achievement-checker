@@ -1,12 +1,30 @@
-# Halo CE Achievement Checker
+# Halo 1: Combat Evolved Achievement Checker
 
-Read your **Halo: Campaign Evolved** campaign progress straight out of the save
-file, and see exactly which missions each achievement is still waiting on.
+**Your achievement is stuck at 92% and the game will not tell you which mission
+is missing. This finds it.**
 
-The game only ever shows you a percentage. If `Mix Master` sits at 92%, you know
-twelve of the thirteen Remix missions are done deathless — but not which one is
-left, and replaying all thirteen to find out is not a great evening. This tool
-reads the save and tells you.
+For **Halo: Campaign Evolved** — the Halo 1 / Combat Evolved remake. Windows
+only, nothing to install, and it never changes your save.
+
+## The problem
+
+Some achievements need all thirteen campaign missions. `Mix Master`, for
+example: finish the whole Remix campaign without dying once.
+
+You play, you die a few times, you replay. At some point the game says **92%**.
+So twelve missions are done and one is not — but the game never says *which*
+one. Neither does the Xbox achievement list, and that is not an oversight you
+can work around: Xbox stores this achievement as a single number for the whole
+campaign, so there is genuinely nothing more for it to show.
+
+The usual advice is to replay all thirteen missions until the number moves.
+That is an entire evening, or several.
+
+## What this does
+
+Every time you finish a mission, the game writes that down in a file on your PC.
+That file knows exactly which missions you have done, on which difficulty, and
+which ones you have not. This tool reads it and prints the list:
 
 ```
 #   Mission                          Easy    Normal  Heroic  Legend  Remix   Rmx-DL
@@ -20,89 +38,115 @@ reads the save and tells you.
   Remix.Deathless  still missing: The Truth and Reconciliation [a50]
 ```
 
-Read-only. Nothing is ever written to your save.
+`x` means done, `.` means not done. The last line names the mission you still
+owe. That is the whole point.
 
-## Quick start
+**It only ever reads.** Your save is never changed, moved or deleted. Your Xbox
+account is not touched, and nothing is sent anywhere.
 
-For anyone who just wants to know which mission is missing:
+## What you need
 
-1. Get the files — on <https://github.com/t-meyer/halo-ce-achievement-checker> click
-   **Code → Download ZIP**, or
+- A Windows PC **on which you have played the game**. If you only played on an
+  Xbox console, your save lives in Microsoft's cloud and there is no file on
+  your PC to read — this cannot help you then.
+- Nothing else. PowerShell is already part of every Windows 10 and 11.
+- No installation, no account, no admin rights, no API key.
+
+## Step by step
+
+1. Click the green **Code** button at the top of this page, then
+   **Download ZIP**.
+2. Right-click the downloaded file, choose **Extract All**, and confirm.
+3. Open the folder you just extracted. Hold **Shift**, right-click on an empty
+   spot inside the folder, and choose **Open PowerShell window here** (on
+   Windows 11 it may read **Open in Terminal**).
+4. Type this and press Enter:
 
    ```powershell
-   git clone https://github.com/t-meyer/halo-ce-achievement-checker.git
+   .\halo-1-combat-evolved-achievement-checker.ps1
    ```
 
-2. Open PowerShell in that folder and run
+   You do not have to type all of it: type `.\halo` and press the **Tab** key,
+   Windows completes the rest.
+
+5. If Windows refuses to run it, the file is marked as "downloaded from the
+   internet". Run this once, then repeat step 4:
 
    ```powershell
-   .\halo-ce-achievement-checker.ps1
+   Unblock-File .\halo-1-combat-evolved-achievement-checker.ps1
    ```
 
-3. Read the bottom of the table. The `completed` row is your progress per
-   difficulty, and every column short of 13/13 by four missions or fewer gets a
-   `still missing:` line naming the missions by name.
+6. Read the table. Done.
 
-If Windows refuses to run a script you downloaded:
+> **Run the file — do not copy the script text into the PowerShell window.**
+> Pasted code does not know where it lives, so it stops immediately with
+> *"Cannot bind argument to parameter 'Path' because it is an empty string"* /
+> *"Das Argument kann nicht an den Parameter 'Path' gebunden werden"*.
 
-```powershell
-Unblock-File .\halo-ce-achievement-checker.ps1
-powershell -ExecutionPolicy Bypass -File .\halo-ce-achievement-checker.ps1
-```
+## Reading the result
 
-No installation, no dependencies, nothing is written anywhere. You do not need
-administrator rights.
+- Each row is one mission, each column one difficulty. `Rmx-DL` is Remix
+  deathless — the one behind `Mix Master`.
+- The `completed` row counts the `x` per column.
+- When a column is missing four missions or fewer, you get a `still missing:`
+  line underneath that names them. That is your to-do list.
+- `Skulls collected` and `Terminals found` are listed below the table.
 
-> **Run the file, do not paste its text into a PowerShell window.** Pasted code
-> has no script path of its own, so the tool cannot locate `data/missions.json`
-> and stops right away with *"Das Argument kann nicht an den Parameter 'Path'
-> gebunden werden"* / *"Cannot bind argument to parameter 'Path' because it is
-> an empty string"*.
+If several people play on the same PC, every Xbox account gets its own table,
+with the gamertag in the heading.
 
-## Requirements
+## Something went wrong
 
-Windows with PowerShell 5.1 or later — that is what ships with Windows 10 and 11,
-nothing to install. The game must have been played on that PC; an Xbox console
-keeps its save in the cloud, where there is no local file to read.
+| What you see | What it means |
+| --- | --- |
+| `No Halo: Campaign Evolved save found` | The game was never played on this PC, or only on a console. There is no local file to read. |
+| `Cannot bind argument to parameter 'Path'` | You pasted the script text into the window instead of running the file. See the box above. |
+| Windows refuses to run the script | Run `Unblock-File` as shown in step 5. |
+| `Unrecognised tags` at the end | The game was patched and writes something new. The table is still correct; an issue with that list is welcome. |
 
-## Usage
+Nothing here can damage your save — the tool contains no code that writes to it.
+
+## Sharing your result
+
+The heading line and the JSON export contain your XUID and your gamertag. The
+mission table itself does not. Copy just the table when you post it somewhere.
+
+## More options
 
 ```powershell
 # everything the save knows
-.\halo-ce-achievement-checker.ps1
+.\halo-1-combat-evolved-achievement-checker.ps1
 
 # just the mission matrix, plus a JSON dump
-.\halo-ce-achievement-checker.ps1 -Section Missions -Json progress.json
+.\halo-1-combat-evolved-achievement-checker.ps1 -Section Missions -Json progress.json
 
 # one specific Xbox account on a shared PC
-.\halo-ce-achievement-checker.ps1 -Account 2533274833271139
+.\halo-1-combat-evolved-achievement-checker.ps1 -Account 2533274833271139
 
 # a save folder copied off another PC, or a single save blob
-.\halo-ce-achievement-checker.ps1 -SavePath D:\backup\wgs
+.\halo-1-combat-evolved-achievement-checker.ps1 -SavePath D:\backup\wgs
 
 # every gameplay tag in the file, unparsed
-.\halo-ce-achievement-checker.ps1 -Raw
+.\halo-1-combat-evolved-achievement-checker.ps1 -Raw
 ```
 
-`Get-Help .\halo-ce-achievement-checker.ps1 -Full` lists all parameters.
-
-> **Before you paste output into a forum:** the header line and the JSON export
-> contain your XUID and gamertag. The mission table itself does not — copy just
-> that part, or strip the identifiers first.
+`Get-Help .\halo-1-combat-evolved-achievement-checker.ps1 -Full` lists all
+parameters.
 
 ### Achievements from Xbox Live
 
 `Get-HaloAchievements.ps1` lists all 58 achievements with their unlock state and
-progress. It needs a free API key from [xbl.io](https://xbl.io) (sign in with
-your Microsoft account, copy the key from your profile).
+progress. This one is optional and needs a free API key from
+[xbl.io](https://xbl.io) (sign in with your Microsoft account, copy the key from
+your profile).
 
 ```powershell
 .\Get-HaloAchievements.ps1 -Missing
 .\Get-HaloAchievements.ps1 -Gamertag "AFriend"
 ```
 
-The key can also live in the `HALO_XBL_KEY` environment variable so you are
-not asked for it every run.
+The key can also live in the `HALO_XBL_KEY` environment variable so you are not
+asked for it every run.
 
 A friend's data is readable as long as their Xbox privacy settings let friends
 see game history, which is the default. Names come back in the account's console

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    halo-ce-achievement-checker - read campaign progress out of a Halo: Campaign Evolved save.
+    halo-1-combat-evolved-achievement-checker - read campaign progress out of a Halo: Campaign Evolved save.
 
 .DESCRIPTION
     Halo: Campaign Evolved (2026) stores per-mission progress as Unreal
@@ -30,14 +30,14 @@
     Print every gameplay tag found, unparsed.
 
 .EXAMPLE
-    .\halo-ce-achievement-checker.ps1
+    .\halo-1-combat-evolved-achievement-checker.ps1
     Autodetect and print everything.
 
 .EXAMPLE
-    .\halo-ce-achievement-checker.ps1 -Section Missions -Json progress.json
+    .\halo-1-combat-evolved-achievement-checker.ps1 -Section Missions -Json progress.json
 
 .LINK
-    https://github.com/t-meyer/halo-ce-achievement-checker
+    https://github.com/t-meyer/halo-1-combat-evolved-achievement-checker
 #>
 
 [CmdletBinding()]
@@ -283,7 +283,7 @@ $tagMap   = Get-GamertagMap
 $saves    = @(Get-AccountSaves -Root $root)
 
 Write-Host ''
-Write-Host 'Halo CE Achievement Checker - Campaign Evolved save reader' -ForegroundColor Cyan
+Write-Host 'Halo 1: Combat Evolved Achievement Checker - Campaign Evolved save reader' -ForegroundColor Cyan
 Write-Host "source: $root" -ForegroundColor DarkGray
 
 if ($saves.Count -eq 0) { Write-Host 'No save data found in that location.' -ForegroundColor Red; return }

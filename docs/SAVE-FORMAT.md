@@ -134,4 +134,4 @@ patches:
 Blam\.[A-Za-z0-9_.]+
 ```
 
-That is exactly what `halo-ce-achievement-checker.ps1` does.
+That is exactly what `halo-1-combat-evolved-achievement-checker.ps1` does.
