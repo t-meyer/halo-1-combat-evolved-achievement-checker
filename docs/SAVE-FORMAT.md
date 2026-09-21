@@ -122,17 +122,23 @@ Scanning whole strings rather than `Blam.` tags turns up **`IsLASO`** in the
 save. It is not a gameplay tag, which is why every earlier pass missed it: the
 reader only ever looked at names beginning with `Blam.`.
 
-It surfaced in a save where a LASO mission had been started and saved but not
-finished, and it is not in the 19 KB `Progress` blob's tag list - so the game
-tracks LASO somewhere in the checkpoint containers. Which container, what type
-the property has and what value it carries is what `-Inspect` answers:
+It sits in **both** checkpoint containers at nearly the same offset - 0xd75 in
+one, 0xd7f in the other - and in neither case in the 19 KB `Progress` blob. So
+it describes a saved game, not the campaign history.
+
+It is **not** a plain `BoolProperty`. What follows the name is `None`, GVAS's
+end-of-list marker, with `VariantStorage` a few bytes further on, so `IsLASO`
+belongs to a variant storage block rather than to a property pair whose value
+sits beside it. Where that value is kept is still open.
+
+The name immediately preceding it ends in `reEnabledBool` - truncated, because
+the dump started 16 bytes ahead of the match. Its full name is worth having:
+LASO is Legendary *plus every skull*, and a neighbouring "...are enabled" flag
+is the shape the second half of that condition would take.
 
 ```powershell
-.\Debug-SaveTags.ps1 -Inspect 'IsLASO'
+.\Debug-SaveTags.ps1 -Inspect 'IsLASO' -Before 128 -Around 256
 ```
-
-The type name follows the property name directly in GVAS, and a `BoolProperty`
-carries its value in the single byte after the 8-byte size field.
 
 Note that the checkpoint containers are rewritten as you play, and their sizes
 move with it - 1001 KB, 923 KB and 391 KB have all been observed. Only the

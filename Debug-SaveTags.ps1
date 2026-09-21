@@ -47,6 +47,10 @@
 .PARAMETER Around
     How many bytes after a match -Inspect prints. Default 80.
 
+.PARAMETER Before
+    How many bytes before a match -Inspect prints. Default 16. Raise it when a
+    neighbouring name is cut off at the top of the dump.
+
 .EXAMPLE
     .\Debug-SaveTags.ps1
 
@@ -57,7 +61,7 @@
     .\Debug-SaveTags.ps1 -Strings -Export after.txt -Baseline before.txt
 
 .EXAMPLE
-    .\Debug-SaveTags.ps1 -Inspect 'IsLASO'
+    .\Debug-SaveTags.ps1 -Inspect 'IsLASO' -Before 128 -Around 256
 
 .LINK
     https://github.com/t-meyer/halo-1-combat-evolved-achievement-checker
@@ -72,7 +76,8 @@ param(
     [string]$Export,
     [string]$Baseline,
     [string]$Inspect,
-    [int]$Around = 80
+    [int]$Around = 80,
+    [int]$Before = 16
 )
 
 $ErrorActionPreference = 'Stop'
@@ -162,7 +167,7 @@ function Write-HexDump {
 }
 
 function Show-Inspection {
-    param([System.IO.FileInfo]$File, [string]$Match, [int]$Around)
+    param([System.IO.FileInfo]$File, [string]$Match, [int]$Around, [int]$Before)
 
     $bytes  = [IO.File]::ReadAllBytes($File.FullName)
     $narrow = [Text.Encoding]::GetEncoding(28591).GetString($bytes)
@@ -174,7 +179,7 @@ function Show-Inspection {
     if (-not $offsets.Count) { return 0 }
 
     foreach ($hit in ($offsets | Sort-Object At)) {
-        $from = [Math]::Max(0, $hit.At - 16)
+        $from = [Math]::Max(0, $hit.At - $Before)
         Write-Host ''
         Write-Host ("  {0} at offset {1} (0x{1:x}), {2}-byte characters" -f $File.Name, $hit.At, $hit.Width) -ForegroundColor Cyan
         Write-HexDump -Bytes $bytes -Start $from -Length ($Around + ($hit.At - $from)) -Highlight $hit.At
@@ -298,7 +303,7 @@ if ($Inspect) {
     Write-Host ''
     Write-Host ("inspecting /{0}/ in place:" -f $Inspect) -ForegroundColor Cyan
     $total = 0
-    foreach ($file in $files) { $total += Show-Inspection -File $file -Match $Inspect -Around $Around }
+    foreach ($file in $files) { $total += Show-Inspection -File $file -Match $Inspect -Around $Around -Before $Before }
     if (-not $total) {
         Write-Host '  no match in any container' -ForegroundColor Yellow
     }
