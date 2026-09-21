@@ -116,33 +116,45 @@ What the same measurement does establish, independent of LASO:
 - The only tag matching `laso|mythic` anywhere in the save is `Blam.Skull.Mythic`
   - the skull of that name, not a progress record.
 
-### `IsLASO` exists
+### The checkpoint containers carry a game-variant schema
 
 Scanning whole strings rather than `Blam.` tags turns up **`IsLASO`** in the
-save. It is not a gameplay tag, which is why every earlier pass missed it: the
-reader only ever looked at names beginning with `Blam.`.
+save. It is not a gameplay tag, which is why every pass that looked only at
+`Blam.` names missed it.
 
-It sits in **both** checkpoint containers at nearly the same offset - 0xd75 in
-one, 0xd7f in the other - and in neither case in the 19 KB `Progress` blob. So
-it describes a saved game, not the campaign history.
+It sits in both checkpoint containers at nearly the same offset - 0xd75 in one,
+0xd7f in the other - and in neither case in the 19 KB `Progress` blob. Around it
+is a run of names that reads as the schema of a game variant:
 
-It is **not** a plain `BoolProperty`. What follows the name is `None`, GVAS's
-end-of-list marker, with `VariantStorage` a few bytes further on, so `IsLASO`
-belongs to a variant storage block rather than to a property pair whose value
-sits beside it. Where that value is kept is still open.
-
-The name immediately preceding it ends in `reEnabledBool` - truncated, because
-the dump started 16 bytes ahead of the match. Its full name is worth having:
-LASO is Legendary *plus every skull*, and a neighbouring "...are enabled" flag
-is the shape the second half of that condition would take.
-
-```powershell
-.\Debug-SaveTags.ps1 -Inspect 'IsLASO' -Before 128 -Around 256
+```
+<skull names...> EyePatch Mythic Thunderstorm ThatsJustWrong Temperamental
+Boom GruntBirthdayPty Funeral IWHBYD ... Iron Fog EnduranceSpec StowAndGrow
+Adapta... Reload Armistice
+ActiveSkulls
+bFriendlyFireEnabledBool
+IsLASO
+None                      <- GVAS end-of-list marker
+VariantStorage
+EncounterRemixR...omSeedUInt32
+PerPlayerTrait  Vitality  DamageResistPercentageSetting  ShieldRechargeRate
+Weapon  Melee  Modifier  InfiniteAmmo  BottomlessClip
 ```
 
-Note that the checkpoint containers are rewritten as you play, and their sizes
-move with it - 1001 KB, 923 KB and 391 KB have all been observed. Only the
-19 KB `Progress` blob is stable.
+Two things follow, and both are easy to get wrong:
+
+- **`IsLASO` is a field name, not a value.** The names carry type suffixes
+  (`...Bool`, `...UInt32`, `...Setting`) and sit together ahead of `None`, which
+  is what a schema listing looks like. The same block appears in a container
+  written before any LASO run. Its presence says the game has the field; it says
+  nothing about whether the flag is set. The value lives elsewhere in the blob,
+  so the byte after the name is not it.
+- **`ActiveSkulls` exists**, so which skulls are on *is* recorded - for the
+  session in progress, in the checkpoint container. That is the half of the LASO
+  condition `Progress` lacks, but it is current state, not history.
+
+Nothing here is per-mission and nothing here is permanent: these containers are
+rewritten as you play. A LASO column would need a durable per-mission record,
+and the only place that could live is `Progress`.
 
 ### How to settle it
 
