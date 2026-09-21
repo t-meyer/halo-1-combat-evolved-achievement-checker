@@ -103,11 +103,13 @@ account is not touched, and nothing is sent anywhere.
 - When a column is missing four missions or fewer, you get a `still missing:`
   line underneath that names them. That is your to-do list.
 - `Skulls collected` and `Terminals found` are listed below the table.
-- The columns are read out of the save, not built into the tool. If your save
-  records a set the six columns do not cover — a LASO run, for instance — it
-  gets its own column and is named under the table. Whether the game writes one
-  for LASO at all is not yet confirmed; if you get an extra column, please open
-  an issue and say what it is called.
+- The columns are read out of the save, not built into the tool. If a game
+  patch ever adds a completion set, it gets its own column and is named under
+  the table.
+- **There is no LASO column, and there cannot be one.** The save records that a
+  mission was finished on a difficulty, never which skulls were on at the time —
+  so the "all skulls on" half of LASO is simply not in the file. See
+  [`docs/SAVE-FORMAT.md`](docs/SAVE-FORMAT.md) for the measurement.
 
 If several people play on the same PC, every Xbox account gets its own table,
 with the gamertag in the heading.
@@ -224,7 +226,8 @@ complete set the game defines.
   combinations it needs, so the tool can print a to-do list instead of a matrix
 - Confirm the bonus mission ids
 - Decode `TrainingBlobBitvectorLow` / `High`
-- Read the `CoreSave_*` containers for per-checkpoint detail
+- Work out what the two ~1 MB `CoreSave_*` containers hold — measured: no
+  gameplay tags whatsoever, so whatever is in them is in another format
 
 ## Contributing
 

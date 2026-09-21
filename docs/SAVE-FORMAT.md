@@ -52,8 +52,8 @@ largest file.
 
 | Container | Size | Contents |
 | --- | --- | --- |
-| `CoreSave_0` | ~1 MB | checkpoint / mission state |
-| `CoreSave_2` | ~1 MB | checkpoint / mission state |
+| `CoreSave_0` | ~1 MB | checkpoint state - **contains no `Blam.` tags at all** |
+| `CoreSave_2` | ~1 MB | checkpoint state - **contains no `Blam.` tags at all** |
 | `Progress` | ~19 KB | **persistent progression — this is the interesting one** |
 
 ## The Progress blob
@@ -96,22 +96,44 @@ Normal, only 11 of the 13 `Heroic` tags existed.
 | `Blam.Terminal.terminal_<id>` | terminal found |
 | `Blam.Progress.Mission.InsertionPoints.ins_<id>_<name>` | checkpoint / insertion point reached |
 
-### The completion sets are not a fixed list
+### The completion sets are a closed list - and LASO is not in it
 
-The six sets above are what one 100% save contained. The game also has a LASO
-playlist (Legendary, all skulls on) with an achievement of its own, and whether
-that is recorded as its own `Completion.<set>.<id>` family, or merely as
-`Legendary` plus the skull tags, is **unconfirmed** - no save with a finished
-LASO run has been examined.
+Six sets exist and no more:
 
-The reader therefore does not hardcode the list. It splits everything after
-`Blam.Progress.Mission.Completion.` at the last dot: the trailing segment is the
-mission id, whatever precedes it is the set name. A set the game adds later
-becomes its own column by itself and is named under the table. Reports of extra
-columns are welcome - that is how this list grows.
+```
+Easy  Heroic  Legendary  Normal  Remix  Remix.Deathless
+```
 
-A 100% save carried 185 distinct tags: 42 insertion points, 13 terminals,
-43 skulls and the completion sets above.
+Measured by walking every container of a save with a finished LASO run: the two
+~1 MB `CoreSave` blobs yield zero `Blam.` tags, and all 185 tags come from the
+19 KB `Progress` blob. The only tag in the whole save matching `laso|mythic` is
+`Blam.Skull.Mythic`, which is the skull of that name, not a completion record.
+
+**LASO progress therefore cannot be read out of the save.** The file records
+that a mission was finished on a difficulty; it never records which skulls were
+active while it was. Since LASO is Legendary *with every skull on*, the decisive
+half of the condition is simply not written down.
+
+Nor can it be inferred. A LASO run sets `Legendary` and `Remix.Deathless`, but
+so does finishing a mission on Legendary one evening and deathless in Remix the
+next - identical tags, different achievements. Any tool claiming to derive LASO
+from this save would be guessing.
+
+What remains is the MYTHIC achievement percentage from Xbox Live, and that has
+the same defect as `Mix Master`: it counts to 13 without naming which.
+
+### Tag inventory
+
+One save carried 185 distinct tags, and they account for the file completely:
+
+| Family | Count |
+| --- | --- |
+| `Blam.Progress.Mission.Completion` | 85 |
+| `Blam.Skull` | 45 |
+| `Blam.Progress.Mission.InsertionPoints` | 42 |
+| `Blam.Terminal` | 13 |
+
+`Debug-SaveTags.ps1` in this repo prints that breakdown for any save.
 
 ### Mission ids
 

@@ -13,12 +13,9 @@ worth having.
 2. **Skull and terminal lists.** The current lists come from a single save. If
    your save shows a `Blam.Skull.*` or `Blam.Terminal.*` tag that is not in
    `docs/SAVE-FORMAT.md`, say so.
-3. **Does LASO have its own completion set?** If you have finished missions on
-   the LASO playlist, run `.\Debug-SaveTags.ps1`. It opens every container, not
-   just the one the main script picks, lists the completion sets it finds and
-   calls out anything matching `laso|mythic`. The tool prints any extra set it
-   finds under the table; tell us the name either way, "there is none" is also
-   an answer.
+3. **A save from a newer patch.** The completion sets are read from the file
+   rather than hardcoded, so if a patch adds one, `.\Debug-SaveTags.ps1` will
+   show it under `completion sets`. Report anything beyond the six known ones.
 4. **Achievement to requirement mapping.** The end goal is "you still need the
    Bandana skull on The Library" instead of a matrix. That needs all 58
    achievements with the missions and skulls each one depends on.
