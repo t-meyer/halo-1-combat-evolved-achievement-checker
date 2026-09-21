@@ -13,13 +13,19 @@ worth having.
 2. **Skull and terminal lists.** The current lists come from a single save. If
    your save shows a `Blam.Skull.*` or `Blam.Terminal.*` tag that is not in
    `docs/SAVE-FORMAT.md`, say so.
-3. **A save from a newer patch.** The completion sets are read from the file
+3. **Does LASO write its own completion set?** Still open, and the single most
+   useful thing anyone can answer. Run `.\Debug-SaveTags.ps1 -Export before.txt`,
+   finish one mission on the LASO playlist, then
+   `.\Debug-SaveTags.ps1 -Export after.txt -Baseline before.txt` and report which
+   tags appeared. "Only Legendary and Remix.Deathless" is just as useful an
+   answer as a new set name.
+4. **A save from a newer patch.** The completion sets are read from the file
    rather than hardcoded, so if a patch adds one, `.\Debug-SaveTags.ps1` will
    show it under `completion sets`. Report anything beyond the six known ones.
-4. **Achievement to requirement mapping.** The end goal is "you still need the
+5. **Achievement to requirement mapping.** The end goal is "you still need the
    Bandana skull on The Library" instead of a matrix. That needs all 58
    achievements with the missions and skulls each one depends on.
-5. **Unrecognised tags.** If the checker prints an "Unrecognised tags" block after
+6. **Unrecognised tags.** If the checker prints an "Unrecognised tags" block after
    a game patch, open an issue with that list.
 
 ## Ground rules

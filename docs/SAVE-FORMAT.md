@@ -96,31 +96,54 @@ Normal, only 11 of the 13 `Heroic` tags existed.
 | `Blam.Terminal.terminal_<id>` | terminal found |
 | `Blam.Progress.Mission.InsertionPoints.ins_<id>_<name>` | checkpoint / insertion point reached |
 
-### The completion sets are a closed list - and LASO is not in it
+### Completion sets, and the open LASO question
 
-Six sets exist and no more:
+Six sets have been observed:
 
 ```
 Easy  Heroic  Legendary  Normal  Remix  Remix.Deathless
 ```
 
-Measured by walking every container of a save with a finished LASO run: the two
-~1 MB `CoreSave` blobs yield zero `Blam.` tags, and all 185 tags come from the
-19 KB `Progress` blob. The only tag in the whole save matching `laso|mythic` is
-`Blam.Skull.Mythic`, which is the skull of that name, not a completion record.
+Whether the LASO playlist (Legendary, all skulls on) adds a seventh is **not
+settled**. The save measured here belongs to a player who has never started a
+LASO run, and a tag exists only once it is earned - so the absence of a LASO set
+in this file is exactly what you would expect either way. It proves nothing.
 
-**LASO progress therefore cannot be read out of the save.** The file records
-that a mission was finished on a difficulty; it never records which skulls were
-active while it was. Since LASO is Legendary *with every skull on*, the decisive
-half of the condition is simply not written down.
+What the same measurement does establish, independent of LASO:
 
-Nor can it be inferred. A LASO run sets `Legendary` and `Remix.Deathless`, but
-so does finishing a mission on Legendary one evening and deathless in Remix the
-next - identical tags, different achievements. Any tool claiming to derive LASO
-from this save would be guessing.
+- The two ~1 MB `CoreSave` blobs contain **zero** `Blam.` tags. Every one of the
+  185 tags comes from the 19 KB `Progress` blob.
+- The only tag matching `laso|mythic` anywhere in the save is `Blam.Skull.Mythic`
+  - the skull of that name, not a progress record.
 
-What remains is the MYTHIC achievement percentage from Xbox Live, and that has
-the same defect as `Mix Master`: it counts to 13 without naming which.
+### How to settle it
+
+Export the tag list, finish one mission on the LASO playlist, export again and
+compare:
+
+```powershell
+.\Debug-SaveTags.ps1 -Export before.txt
+# ... play one LASO mission to completion ...
+.\Debug-SaveTags.ps1 -Export after.txt -Baseline before.txt
+```
+
+Three outcomes:
+
+- A new `Completion.<set>.<mission id>` family appears - LASO has its own set,
+  and the reader picks it up as a column without a code change.
+- Only `Legendary` and `Remix.Deathless` entries appear for that mission - LASO
+  is not recorded as such.
+- Nothing appears at all - the run was not registered.
+
+If the second case holds, LASO cannot be derived from the save and no tool can
+honestly show it. A LASO run would set `Legendary` and `Remix.Deathless`, but so
+does finishing a mission on Legendary one evening and deathless in Remix the
+next: identical tags, different achievements. The file never records which
+skulls were active during a completion, and that is the deciding half of the
+LASO condition.
+
+What is certain either way is that the MYTHIC achievement percentage from Xbox
+Live has the same defect as `Mix Master`: it counts to 13 without naming which.
 
 ### Tag inventory
 

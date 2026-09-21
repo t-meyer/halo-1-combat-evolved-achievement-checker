@@ -106,10 +106,11 @@ account is not touched, and nothing is sent anywhere.
 - The columns are read out of the save, not built into the tool. If a game
   patch ever adds a completion set, it gets its own column and is named under
   the table.
-- **There is no LASO column, and there cannot be one.** The save records that a
-  mission was finished on a difficulty, never which skulls were on at the time —
-  so the "all skulls on" half of LASO is simply not in the file. See
-  [`docs/SAVE-FORMAT.md`](docs/SAVE-FORMAT.md) for the measurement.
+- **A LASO column may or may not be possible — that is still open.** No save
+  from a finished LASO run has been examined yet. If the game records one, it
+  appears here by itself; if it only records `Legendary` and `Remix.Deathless`,
+  it cannot be told apart from two ordinary runs. See
+  [`docs/SAVE-FORMAT.md`](docs/SAVE-FORMAT.md) for how to settle it.
 
 If several people play on the same PC, every Xbox account gets its own table,
 with the gamertag in the heading.

@@ -23,11 +23,19 @@
     Write every tag of every container to this file, for sharing in an issue.
     Tags contain no XUID or gamertag, so the file is safe to post as-is.
 
+.PARAMETER Baseline
+    An earlier -Export file. Reports which tags have appeared and disappeared
+    since, which is how you find out what a given activity actually writes:
+    export, play the thing, export again against the first file.
+
 .EXAMPLE
     .\Debug-SaveTags.ps1
 
 .EXAMPLE
     .\Debug-SaveTags.ps1 -Pattern 'laso|mythic|skull' -Export tags.txt
+
+.EXAMPLE
+    .\Debug-SaveTags.ps1 -Export after.txt -Baseline before.txt
 
 .LINK
     https://github.com/t-meyer/halo-1-combat-evolved-achievement-checker
@@ -37,7 +45,8 @@
 param(
     [string]$SavePath,
     [string]$Pattern = 'laso|mythic',
-    [string]$Export
+    [string]$Export,
+    [string]$Baseline
 )
 
 $ErrorActionPreference = 'Stop'
@@ -156,6 +165,31 @@ if (-not $hits.Count) {
     Write-Host 'Nothing matched. Either the save does not record it at all, or it is' -ForegroundColor DarkGray
     Write-Host 'stored under a name this pattern does not cover - try -Pattern with' -ForegroundColor DarkGray
     Write-Host 'something broader, or export the full list and read through it.' -ForegroundColor DarkGray
+}
+
+# --- what changed -----------------------------------------------------------
+
+if ($Baseline) {
+    if (-not (Test-Path $Baseline)) { throw "Baseline file not found: $Baseline" }
+    $was = @(Get-Content $Baseline | ForEach-Object { $_.Trim() } | Where-Object { $_ -like 'Blam.*' } | Sort-Object -Unique)
+
+    $added   = @($all | Where-Object { $was  -notcontains $_ })
+    $removed = @($was | Where-Object { $all  -notcontains $_ })
+
+    Write-Host ''
+    Write-Host ("compared against {0} ({1} tags)" -f (Split-Path $Baseline -Leaf), $was.Count) -ForegroundColor Cyan
+
+    Write-Host ("  appeared since: {0}" -f $added.Count) -ForegroundColor $(if ($added.Count) { 'Green' } else { 'DarkGray' })
+    foreach ($tag in $added) { Write-Host "    + $tag" -ForegroundColor Green }
+
+    if ($removed.Count) {
+        Write-Host ("  gone since: {0}" -f $removed.Count) -ForegroundColor Yellow
+        foreach ($tag in $removed) { Write-Host "    - $tag" -ForegroundColor Yellow }
+    }
+
+    if (-not $added.Count -and -not $removed.Count) {
+        Write-Host '  the save is unchanged' -ForegroundColor DarkGray
+    }
 }
 
 # --- export -----------------------------------------------------------------
