@@ -122,10 +122,16 @@ Export the tag list, finish one mission on the LASO playlist, export again and
 compare:
 
 ```powershell
-.\Debug-SaveTags.ps1 -Export before.txt
+.\Debug-SaveTags.ps1 -Strings -Export before.txt
 # ... play one LASO mission to completion ...
-.\Debug-SaveTags.ps1 -Export after.txt -Baseline before.txt
+.\Debug-SaveTags.ps1 -Strings -Export after.txt -Baseline before.txt
 ```
+
+`-Strings` matters here. Without it only names beginning with `Blam.` are read,
+and a playlist or modifier flag may well be an ordinary GVAS property under a
+name no tag pattern matches. In that mode each container is read both as
+single-byte and as UTF-16, since GVAS mixes the two, and the `CoreSave` blobs
+are included - they hold no `Blam.` tags but are a megabyte each.
 
 Three outcomes:
 

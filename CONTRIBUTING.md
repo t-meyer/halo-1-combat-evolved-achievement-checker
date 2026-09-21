@@ -14,10 +14,10 @@ worth having.
    your save shows a `Blam.Skull.*` or `Blam.Terminal.*` tag that is not in
    `docs/SAVE-FORMAT.md`, say so.
 3. **Does LASO write its own completion set?** Still open, and the single most
-   useful thing anyone can answer. Run `.\Debug-SaveTags.ps1 -Export before.txt`,
+   useful thing anyone can answer. Run `.\Debug-SaveTags.ps1 -Strings -Export before.txt`,
    finish one mission on the LASO playlist, then
-   `.\Debug-SaveTags.ps1 -Export after.txt -Baseline before.txt` and report which
-   tags appeared. "Only Legendary and Remix.Deathless" is just as useful an
+   `.\Debug-SaveTags.ps1 -Strings -Export after.txt -Baseline before.txt` and
+   report what appeared. "Only Legendary and Remix.Deathless" is just as useful an
    answer as a new set name.
 4. **A save from a newer patch.** The completion sets are read from the file
    rather than hardcoded, so if a patch adds one, `.\Debug-SaveTags.ps1` will

@@ -1,41 +1,51 @@
 <#
 .SYNOPSIS
-    Debug-SaveTags - list the gameplay tags in every save container, not just one.
+    Debug-SaveTags - what every Halo: Campaign Evolved save container contains.
 
 .DESCRIPTION
-    The main script reads one container per Xbox account: whichever holds the
-    most tags, which in practice is Progress. This one opens every container,
-    including the two ~1 MB CoreSave blobs nothing has parsed yet, and reports
-    what each of them contains.
+    The main script reads one container per Xbox account, whichever holds the
+    most gameplay tags, and looks only at names beginning with "Blam.". This
+    one opens every container, including the two ~1 MB CoreSave blobs, and with
+    -Strings it reads every printable string rather than just the tags.
 
-    Use it to answer questions the mission table cannot, such as whether the
-    LASO playlist records anything of its own and, if so, where.
+    That matters when the thing you are looking for is not a gameplay tag at
+    all. A playlist or modifier flag may sit in the save as an ordinary GVAS
+    property, under a name no tag pattern would ever match.
+
+    The intended use is before-and-after: export, do the thing in game, export
+    again against the first file, and read off what the game actually wrote.
 
     Read-only. Nothing is written to the save, ever.
 
 .PARAMETER SavePath
     Path to a "wgs" folder or to a single container. Autodetected when omitted.
 
+.PARAMETER Strings
+    Collect every printable string, not just Blam tags. Reads each container
+    both as single-byte and as UTF-16, because GVAS mixes the two.
+
+.PARAMETER MinLength
+    Shortest string to keep in -Strings mode. Default 6. Lower finds more and
+    drags in more noise from binary data.
+
 .PARAMETER Pattern
-    Regex for tags to call out separately. Default: laso|mythic.
+    Regex for entries to call out separately. Default: laso|mythic.
 
 .PARAMETER Export
-    Write every tag of every container to this file, for sharing in an issue.
-    Tags contain no XUID or gamertag, so the file is safe to post as-is.
+    Write everything found, per container, to this file. Gameplay tags carry no
+    XUID or gamertag; in -Strings mode, skim the file before posting it.
 
 .PARAMETER Baseline
-    An earlier -Export file. Reports which tags have appeared and disappeared
-    since, which is how you find out what a given activity actually writes:
-    export, play the thing, export again against the first file.
+    An earlier -Export file. Reports what has appeared and disappeared since.
 
 .EXAMPLE
     .\Debug-SaveTags.ps1
 
 .EXAMPLE
-    .\Debug-SaveTags.ps1 -Pattern 'laso|mythic|skull' -Export tags.txt
+    .\Debug-SaveTags.ps1 -Strings -Export before.txt
 
 .EXAMPLE
-    .\Debug-SaveTags.ps1 -Export after.txt -Baseline before.txt
+    .\Debug-SaveTags.ps1 -Strings -Export after.txt -Baseline before.txt
 
 .LINK
     https://github.com/t-meyer/halo-1-combat-evolved-achievement-checker
@@ -44,6 +54,8 @@
 [CmdletBinding()]
 param(
     [string]$SavePath,
+    [switch]$Strings,
+    [int]$MinLength = 6,
     [string]$Pattern = 'laso|mythic',
     [string]$Export,
     [string]$Baseline
@@ -52,6 +64,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $PackageFamilyName = 'Microsoft.198377053870B_8wekyb3d8bbwe'
+$ShowLimit = 40
 
 function Find-SaveRoot {
     param([string]$Explicit)
@@ -78,12 +91,42 @@ function Find-SaveRoot {
     throw 'No Halo: Campaign Evolved save found. Either the game was never played on this PC, or it was only played on an Xbox console.'
 }
 
-function Get-Tags {
+function Get-SaveStrings {
     param([string]$Path)
-    $text = [Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes($Path))
-    return @([regex]::Matches($text, 'Blam\.[A-Za-z0-9_.]+') |
-             ForEach-Object { $_.Value } |
-             Sort-Object -Unique)
+
+    $bytes = [IO.File]::ReadAllBytes($Path)
+    # Latin-1 maps every byte to one char, so bytes above 127 stay outside the
+    # printable range below instead of being folded into "?" as ASCII would.
+    $narrow = [Text.Encoding]::GetEncoding(28591).GetString($bytes)
+
+    if (-not $Strings) {
+        return @([regex]::Matches($narrow, 'Blam\.[A-Za-z0-9_.]+') |
+                 ForEach-Object { $_.Value } | Sort-Object -Unique)
+    }
+
+    $printable = "[\x20-\x7E]{$MinLength,}"
+    $found = [System.Collections.Generic.List[string]]::new()
+    foreach ($m in [regex]::Matches($narrow, $printable)) { $found.Add($m.Value) }
+
+    # GVAS stores some strings as UTF-16, which the pass above sees only as
+    # every other character, so read the same bytes that way too.
+    $wide = [Text.Encoding]::Unicode.GetString($bytes)
+    foreach ($m in [regex]::Matches($wide, $printable)) { $found.Add($m.Value) }
+
+    return @($found | Sort-Object -Unique)
+}
+
+function Write-Capped {
+    param([string[]]$Items, [string]$Colour = 'Gray', [string]$Indent = '  ')
+    $shown = 0
+    foreach ($item in $Items) {
+        if ($shown -ge $ShowLimit) {
+            Write-Host ("{0}... and {1} more, see -Export" -f $Indent, ($Items.Count - $ShowLimit)) -ForegroundColor DarkGray
+            break
+        }
+        Write-Host "$Indent$item" -ForegroundColor $Colour
+        $shown++
+    }
 }
 
 # --- collect ----------------------------------------------------------------
@@ -101,34 +144,35 @@ $files = if ($item.PSIsContainer) {
 Write-Host ''
 Write-Host 'Save container inventory' -ForegroundColor Cyan
 Write-Host "source: $root" -ForegroundColor DarkGray
-Write-Host "containers: $($files.Count)" -ForegroundColor DarkGray
+Write-Host ("containers: {0}   mode: {1}" -f $files.Count, $(if ($Strings) { "all printable strings, min $MinLength chars" } else { 'Blam tags only' })) -ForegroundColor DarkGray
 
 $inventory = @()
 foreach ($file in $files) {
-    $tags = Get-Tags $file.FullName
+    $found = Get-SaveStrings -Path $file.FullName
     $inventory += [pscustomobject]@{
-        File = $file.Name
-        KB   = [int]($file.Length / 1KB)
-        Tags = $tags.Count
-        Hits = @($tags | Where-Object { $_ -match $Pattern }).Count
-        All  = $tags
+        File  = $file.Name
+        KB    = [int]($file.Length / 1KB)
+        Found = $found.Count
+        Hits  = @($found | Where-Object { $_ -match $Pattern }).Count
+        All   = $found
     }
 }
 
 Write-Host ''
 ($inventory | Sort-Object KB -Descending |
- Format-Table File, KB, Tags, Hits -AutoSize | Out-String).TrimEnd() | Write-Host
+ Format-Table File, KB, Found, Hits -AutoSize | Out-String).TrimEnd() | Write-Host
+
+$all = @($inventory | ForEach-Object { $_.All } | Sort-Object -Unique)
+$tags = @($all | Where-Object { $_ -like 'Blam.*' })
+
+Write-Host ''
+Write-Host ("distinct entries: {0}   of them Blam tags: {1}" -f $all.Count, $tags.Count) -ForegroundColor Cyan
 
 # --- what is in there -------------------------------------------------------
 
-$all = @($inventory | ForEach-Object { $_.All } | Sort-Object -Unique)
-
-Write-Host ''
-Write-Host ("distinct tags across all containers: {0}" -f $all.Count) -ForegroundColor Cyan
-
 Write-Host ''
 Write-Host 'tag families:' -ForegroundColor Cyan
-$all | ForEach-Object {
+$tags | ForEach-Object {
         # Group one level above the leaf, capped at four segments, so skulls
         # collapse to Blam.Skull while the Progress tree keeps its branches.
         $parts = $_ -split '\.'
@@ -139,7 +183,7 @@ $all | ForEach-Object {
     ForEach-Object { Write-Host ("  {0,5}  {1}" -f $_.Count, $_.Name) }
 
 $sets = @{}
-foreach ($tag in $all) {
+foreach ($tag in $tags) {
     if ($tag -notmatch '^Blam\.Progress\.Mission\.Completion\.(.+)$') { continue }
     $rest = $Matches[1]
     if ($rest -like 'unlock_*') { continue }
@@ -157,38 +201,41 @@ if ($sets.Count) {
 
 $hits = @($all | Where-Object { $_ -match $Pattern })
 Write-Host ''
-Write-Host ("tags matching /{0}/: {1}" -f $Pattern, $hits.Count) -ForegroundColor $(if ($hits.Count) { 'Green' } else { 'Yellow' })
-foreach ($hit in $hits) { Write-Host "  $hit" }
+Write-Host ("entries matching /{0}/: {1}" -f $Pattern, $hits.Count) -ForegroundColor $(if ($hits.Count) { 'Green' } else { 'Yellow' })
+Write-Capped -Items $hits -Colour Green
 
-if (-not $hits.Count) {
+if (-not $hits.Count -and -not $Strings) {
     Write-Host ''
-    Write-Host 'Nothing matched. Either the save does not record it at all, or it is' -ForegroundColor DarkGray
-    Write-Host 'stored under a name this pattern does not cover - try -Pattern with' -ForegroundColor DarkGray
-    Write-Host 'something broader, or export the full list and read through it.' -ForegroundColor DarkGray
+    Write-Host 'Nothing matched among the Blam tags. Try -Strings, which also reads' -ForegroundColor DarkGray
+    Write-Host 'ordinary GVAS property names and the CoreSave blobs.' -ForegroundColor DarkGray
 }
 
 # --- what changed -----------------------------------------------------------
 
 if ($Baseline) {
     if (-not (Test-Path $Baseline)) { throw "Baseline file not found: $Baseline" }
-    $was = @(Get-Content $Baseline | ForEach-Object { $_.Trim() } | Where-Object { $_ -like 'Blam.*' } | Sort-Object -Unique)
 
-    $added   = @($all | Where-Object { $was  -notcontains $_ })
-    $removed = @($was | Where-Object { $all  -notcontains $_ })
+    $was = @(Get-Content $Baseline |
+             Where-Object { $_ -and $_ -notmatch '^=== .* ===$' } |
+             ForEach-Object { $_.TrimEnd() } |
+             Sort-Object -Unique)
+
+    $added   = @($all | Where-Object { $was -notcontains $_ })
+    $removed = @($was | Where-Object { $all -notcontains $_ })
 
     Write-Host ''
-    Write-Host ("compared against {0} ({1} tags)" -f (Split-Path $Baseline -Leaf), $was.Count) -ForegroundColor Cyan
+    Write-Host ("compared against {0} ({1} entries)" -f (Split-Path $Baseline -Leaf), $was.Count) -ForegroundColor Cyan
 
     Write-Host ("  appeared since: {0}" -f $added.Count) -ForegroundColor $(if ($added.Count) { 'Green' } else { 'DarkGray' })
-    foreach ($tag in $added) { Write-Host "    + $tag" -ForegroundColor Green }
+    Write-Capped -Items $added -Colour Green -Indent '    + '
 
     if ($removed.Count) {
         Write-Host ("  gone since: {0}" -f $removed.Count) -ForegroundColor Yellow
-        foreach ($tag in $removed) { Write-Host "    - $tag" -ForegroundColor Yellow }
+        Write-Capped -Items $removed -Colour Yellow -Indent '    - '
     }
 
     if (-not $added.Count -and -not $removed.Count) {
-        Write-Host '  the save is unchanged' -ForegroundColor DarkGray
+        Write-Host '  nothing changed' -ForegroundColor DarkGray
     }
 }
 
@@ -196,13 +243,13 @@ if ($Baseline) {
 
 if ($Export) {
     $lines = foreach ($entry in ($inventory | Sort-Object KB -Descending)) {
-        "=== {0} ({1} KB, {2} tags) ===" -f $entry.File, $entry.KB, $entry.Tags
+        "=== {0} ({1} KB, {2} entries) ===" -f $entry.File, $entry.KB, $entry.Found
         $entry.All
         ''
     }
     $lines | Set-Content -Path $Export -Encoding ASCII
     Write-Host ''
-    Write-Host "full tag list written to $Export" -ForegroundColor Green
+    Write-Host "written to $Export" -ForegroundColor Green
 }
 
 Write-Host ''
