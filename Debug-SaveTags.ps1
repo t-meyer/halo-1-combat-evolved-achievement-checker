@@ -38,6 +38,15 @@
 .PARAMETER Baseline
     An earlier -Export file. Reports what has appeared and disappeared since.
 
+.PARAMETER Inspect
+    Regex for a name to dump in place: every container is searched, and the
+    bytes around each match are printed as hex and text. That is how you read
+    what a GVAS property actually is - the type name follows immediately after
+    the property name, and a BoolProperty's value is the single byte after it.
+
+.PARAMETER Around
+    How many bytes after a match -Inspect prints. Default 80.
+
 .EXAMPLE
     .\Debug-SaveTags.ps1
 
@@ -46,6 +55,9 @@
 
 .EXAMPLE
     .\Debug-SaveTags.ps1 -Strings -Export after.txt -Baseline before.txt
+
+.EXAMPLE
+    .\Debug-SaveTags.ps1 -Inspect 'IsLASO'
 
 .LINK
     https://github.com/t-meyer/halo-1-combat-evolved-achievement-checker
@@ -58,7 +70,9 @@ param(
     [int]$MinLength = 6,
     [string]$Pattern = 'laso|mythic',
     [string]$Export,
-    [string]$Baseline
+    [string]$Baseline,
+    [string]$Inspect,
+    [int]$Around = 80
 )
 
 $ErrorActionPreference = 'Stop'
@@ -127,6 +141,45 @@ function Write-Capped {
         Write-Host "$Indent$item" -ForegroundColor $Colour
         $shown++
     }
+}
+
+function Write-HexDump {
+    param([byte[]]$Bytes, [int]$Start, [int]$Length, [int]$Highlight)
+
+    $end = [Math]::Min($Bytes.Length, $Start + $Length)
+    for ($row = $Start; $row -lt $end; $row += 16) {
+        $hex  = ''
+        $text = ''
+        for ($i = $row; $i -lt ($row + 16); $i++) {
+            if ($i -ge $end) { $hex += '   '; continue }
+            $b = $Bytes[$i]
+            $hex  += '{0:x2} ' -f $b
+            $text += $(if ($b -ge 0x20 -and $b -le 0x7E) { [char]$b } else { '.' })
+        }
+        $colour = $(if ($row -le $Highlight -and ($row + 16) -gt $Highlight) { 'Green' } else { 'Gray' })
+        Write-Host ("    {0:x8}  {1} {2}" -f $row, $hex, $text) -ForegroundColor $colour
+    }
+}
+
+function Show-Inspection {
+    param([System.IO.FileInfo]$File, [string]$Match, [int]$Around)
+
+    $bytes  = [IO.File]::ReadAllBytes($File.FullName)
+    $narrow = [Text.Encoding]::GetEncoding(28591).GetString($bytes)
+    $wide   = [Text.Encoding]::Unicode.GetString($bytes)
+
+    $offsets = @()
+    foreach ($m in [regex]::Matches($narrow, $Match)) { $offsets += [pscustomobject]@{ At = $m.Index;     Width = 1 } }
+    foreach ($m in [regex]::Matches($wide,   $Match)) { $offsets += [pscustomobject]@{ At = $m.Index * 2; Width = 2 } }
+    if (-not $offsets.Count) { return 0 }
+
+    foreach ($hit in ($offsets | Sort-Object At)) {
+        $from = [Math]::Max(0, $hit.At - 16)
+        Write-Host ''
+        Write-Host ("  {0} at offset {1} (0x{1:x}), {2}-byte characters" -f $File.Name, $hit.At, $hit.Width) -ForegroundColor Cyan
+        Write-HexDump -Bytes $bytes -Start $from -Length ($Around + ($hit.At - $from)) -Highlight $hit.At
+    }
+    return $offsets.Count
 }
 
 # --- collect ----------------------------------------------------------------
@@ -236,6 +289,18 @@ if ($Baseline) {
 
     if (-not $added.Count -and -not $removed.Count) {
         Write-Host '  nothing changed' -ForegroundColor DarkGray
+    }
+}
+
+# --- inspect ----------------------------------------------------------------
+
+if ($Inspect) {
+    Write-Host ''
+    Write-Host ("inspecting /{0}/ in place:" -f $Inspect) -ForegroundColor Cyan
+    $total = 0
+    foreach ($file in $files) { $total += Show-Inspection -File $file -Match $Inspect -Around $Around }
+    if (-not $total) {
+        Write-Host '  no match in any container' -ForegroundColor Yellow
     }
 }
 

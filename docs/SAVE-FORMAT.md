@@ -116,6 +116,28 @@ What the same measurement does establish, independent of LASO:
 - The only tag matching `laso|mythic` anywhere in the save is `Blam.Skull.Mythic`
   - the skull of that name, not a progress record.
 
+### `IsLASO` exists
+
+Scanning whole strings rather than `Blam.` tags turns up **`IsLASO`** in the
+save. It is not a gameplay tag, which is why every earlier pass missed it: the
+reader only ever looked at names beginning with `Blam.`.
+
+It surfaced in a save where a LASO mission had been started and saved but not
+finished, and it is not in the 19 KB `Progress` blob's tag list - so the game
+tracks LASO somewhere in the checkpoint containers. Which container, what type
+the property has and what value it carries is what `-Inspect` answers:
+
+```powershell
+.\Debug-SaveTags.ps1 -Inspect 'IsLASO'
+```
+
+The type name follows the property name directly in GVAS, and a `BoolProperty`
+carries its value in the single byte after the 8-byte size field.
+
+Note that the checkpoint containers are rewritten as you play, and their sizes
+move with it - 1001 KB, 923 KB and 391 KB have all been observed. Only the
+19 KB `Progress` blob is stable.
+
 ### How to settle it
 
 Export the tag list, finish one mission on the LASO playlist, export again and
