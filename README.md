@@ -103,6 +103,11 @@ account is not touched, and nothing is sent anywhere.
 - When a column is missing four missions or fewer, you get a `still missing:`
   line underneath that names them. That is your to-do list.
 - `Skulls collected` and `Terminals found` are listed below the table.
+- The columns are read out of the save, not built into the tool. If your save
+  records a set the six columns do not cover — a LASO run, for instance — it
+  gets its own column and is named under the table. Whether the game writes one
+  for LASO at all is not yet confirmed; if you get an extra column, please open
+  an issue and say what it is called.
 
 If several people play on the same PC, every Xbox account gets its own table,
 with the gamertag in the heading.

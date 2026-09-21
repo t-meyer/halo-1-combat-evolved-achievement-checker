@@ -10,7 +10,8 @@
 
     It reads the save directly and prints the full matrix: difficulty
     completions, Remix, Remix deathless, skulls and terminals - per Xbox
-    account, per mission.
+    account, per mission. Completion sets are read from the save rather than
+    hardcoded, so a set the game adds later shows up as its own column.
 
     Read-only. The save file is never written to.
 
@@ -59,7 +60,23 @@ $ErrorActionPreference = 'Stop'
 # containers.index, which is what the fallback search uses.
 $PackageFamilyName = 'Microsoft.198377053870B_8wekyb3d8bbwe'
 
-$Difficulties = @('Easy', 'Normal', 'Heroic', 'Legendary', 'Remix', 'Remix.Deathless')
+# Completion sets known today, in the order they are printed. The save is the
+# authority: any further set it contains (a LASO column, say) is discovered at
+# parse time and appended, so a game patch needs no code change here.
+$KnownCategories = @('Easy', 'Normal', 'Heroic', 'Legendary', 'Remix', 'Remix.Deathless')
+
+$CategoryLabels = @{
+    'Legendary'       = 'Legend'
+    'Remix.Deathless' = 'Rmx-DL'
+}
+
+function Get-CategoryLabel {
+    param([string]$Category)
+    if ($CategoryLabels.ContainsKey($Category)) { return $CategoryLabels[$Category] }
+    $label = $Category.Split('.')[-1]
+    if ($label.Length -gt 7) { $label = $label.Substring(0, 7) }
+    return $label
+}
 
 $FallbackMissions = @(
     @{ id = 'a15'; name = 'The Pillar of Autumn';         kind = 'main'  }
@@ -196,39 +213,57 @@ function Get-AccountSaves {
 function ConvertTo-Progress {
     param([string[]]$Tags, [array]$Missions)
 
-    $completion = @{}
-    foreach ($m in $Missions) {
-        $row = @{}
-        foreach ($d in $Difficulties) { $row[$d] = $false }
-        $completion[$m.id] = $row
-    }
+    $missionIds = @{}
+    foreach ($m in $Missions) { $missionIds[$m.id] = $true }
 
     $skulls    = [System.Collections.Generic.List[string]]::new()
     $terminals = [System.Collections.Generic.List[string]]::new()
     $unlocked  = [System.Collections.Generic.List[string]]::new()
     $unknown   = [System.Collections.Generic.List[string]]::new()
+    $earned    = [System.Collections.Generic.List[object]]::new()
+    $extra     = [System.Collections.Generic.List[string]]::new()
 
     foreach ($tag in $Tags) {
         switch -Regex ($tag) {
-            '^Blam\.Progress\.Mission\.Completion\.Remix\.Deathless\.(.+)$' {
-                if ($completion.ContainsKey($Matches[1])) { $completion[$Matches[1]]['Remix.Deathless'] = $true }
-                else { $unknown.Add($tag) }
+            '^Blam\.Progress\.Mission\.Completion\.unlock_(.+)$' { $unlocked.Add($Matches[1]); break }
+            '^Blam\.Progress\.Mission\.Completion\.(.+)$' {
+                # What follows is <category>.<mission id>, and the category may
+                # itself contain dots (Remix.Deathless). The mission id is the
+                # last segment, so the category is whatever precedes it - that
+                # is how a set the game adds later ends up with its own column.
+                $rest = $Matches[1]
+                $cut  = $rest.LastIndexOf('.')
+                $id   = if ($cut -ge 0) { $rest.Substring($cut + 1) } else { '' }
+                if ($cut -gt 0 -and $missionIds.ContainsKey($id)) {
+                    $category = $rest.Substring(0, $cut)
+                    $earned.Add([pscustomobject]@{ Category = $category; Mission = $id })
+                    if ($KnownCategories -notcontains $category -and $extra -notcontains $category) {
+                        $extra.Add($category)
+                    }
+                } else {
+                    $unknown.Add($tag)
+                }
                 break
             }
-            '^Blam\.Progress\.Mission\.Completion\.(Easy|Normal|Heroic|Legendary|Remix)\.(.+)$' {
-                if ($completion.ContainsKey($Matches[2])) { $completion[$Matches[2]][$Matches[1]] = $true }
-                else { $unknown.Add($tag) }
-                break
-            }
-            '^Blam\.Progress\.Mission\.Completion\.unlock_(.+)$' { $unlocked.Add($Matches[1]);  break }
-            '^Blam\.Skull\.(.+)$'                               { $skulls.Add($Matches[1]);    break }
-            '^Blam\.Terminal\.terminal_(.+)$'                   { $terminals.Add($Matches[1]); break }
-            '^Blam\.Progress\.Mission\.InsertionPoints\.'        { break }  # checkpoints, not progress
-            default                                             { $unknown.Add($tag) }
+            '^Blam\.Skull\.(.+)$'                        { $skulls.Add($Matches[1]);    break }
+            '^Blam\.Terminal\.terminal_(.+)$'            { $terminals.Add($Matches[1]); break }
+            '^Blam\.Progress\.Mission\.InsertionPoints\.' { break }  # checkpoints, not progress
+            default                                        { $unknown.Add($tag) }
         }
     }
 
+    $categories = @($KnownCategories) + @($extra | Sort-Object)
+
+    $completion = @{}
+    foreach ($m in $Missions) {
+        $row = @{}
+        foreach ($c in $categories) { $row[$c] = $false }
+        $completion[$m.id] = $row
+    }
+    foreach ($e in $earned) { $completion[$e.Mission][$e.Category] = $true }
+
     return [pscustomobject]@{
+        Categories = $categories
         Completion = $completion
         Skulls     = @($skulls    | Sort-Object)
         Terminals  = @($terminals | Sort-Object)
@@ -242,8 +277,10 @@ function ConvertTo-Progress {
 function Write-MissionMatrix {
     param($Progress, [array]$Missions)
 
+    $categories = $Progress.Categories
+
     $header = '{0,-3} {1,-32}' -f '#', 'Mission'
-    foreach ($d in $Difficulties) { $header += ' {0,-7}' -f $d.Replace('Remix.Deathless', 'Rmx-DL').Replace('Legendary', 'Legend') }
+    foreach ($c in $categories) { $header += ' {0,-7}' -f (Get-CategoryLabel $c) }
     Write-Host ''
     Write-Host $header -ForegroundColor Cyan
     Write-Host ('-' * $header.Length) -ForegroundColor DarkGray
@@ -252,26 +289,31 @@ function Write-MissionMatrix {
     foreach ($m in $Missions) {
         $i++
         $line = '{0,-3} {1,-32}' -f $i, $m.name
-        foreach ($d in $Difficulties) {
-            $line += ' {0,-7}' -f $(if ($Progress.Completion[$m.id][$d]) { 'x' } else { '.' })
+        foreach ($c in $categories) {
+            $line += ' {0,-7}' -f $(if ($Progress.Completion[$m.id][$c]) { 'x' } else { '.' })
         }
-        $done = $Progress.Completion[$m.id]['Remix.Deathless']
-        Write-Host $line -ForegroundColor $(if ($done) { 'Gray' } else { 'Yellow' })
+        $complete = @($categories | Where-Object { -not $Progress.Completion[$m.id][$_] }).Count -eq 0
+        Write-Host $line -ForegroundColor $(if ($complete) { 'Gray' } else { 'Yellow' })
     }
 
     Write-Host ('-' * $header.Length) -ForegroundColor DarkGray
     $totals = '{0,-3} {1,-32}' -f '', 'completed'
-    foreach ($d in $Difficulties) {
-        $n = @($Missions | Where-Object { $Progress.Completion[$_.id][$d] }).Count
+    foreach ($c in $categories) {
+        $n = @($Missions | Where-Object { $Progress.Completion[$_.id][$c] }).Count
         $totals += ' {0,-7}' -f "$n/$($Missions.Count)"
     }
     Write-Host $totals -ForegroundColor Cyan
 
-    foreach ($d in $Difficulties) {
-        $missing = @($Missions | Where-Object { -not $Progress.Completion[$_.id][$d] })
+    foreach ($c in $categories) {
+        $missing = @($Missions | Where-Object { -not $Progress.Completion[$_.id][$c] })
         if ($missing.Count -gt 0 -and $missing.Count -le 4) {
-            Write-Host ("  {0,-16} still missing: {1}" -f $d, (($missing | ForEach-Object { "$($_.name) [$($_.id)]" }) -join ', ')) -ForegroundColor Yellow
+            Write-Host ("  {0,-16} still missing: {1}" -f $c, (($missing | ForEach-Object { "$($_.name) [$($_.id)]" }) -join ', ')) -ForegroundColor Yellow
         }
+    }
+
+    $discovered = @($categories | Where-Object { $KnownCategories -notcontains $_ })
+    if ($discovered.Count) {
+        Write-Host ("  extra completion sets in this save: {0}" -f ($discovered -join ', ')) -ForegroundColor Cyan
     }
 }
 

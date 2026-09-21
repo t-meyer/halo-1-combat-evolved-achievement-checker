@@ -96,6 +96,20 @@ Normal, only 11 of the 13 `Heroic` tags existed.
 | `Blam.Terminal.terminal_<id>` | terminal found |
 | `Blam.Progress.Mission.InsertionPoints.ins_<id>_<name>` | checkpoint / insertion point reached |
 
+### The completion sets are not a fixed list
+
+The six sets above are what one 100% save contained. The game also has a LASO
+playlist (Legendary, all skulls on) with an achievement of its own, and whether
+that is recorded as its own `Completion.<set>.<id>` family, or merely as
+`Legendary` plus the skull tags, is **unconfirmed** - no save with a finished
+LASO run has been examined.
+
+The reader therefore does not hardcode the list. It splits everything after
+`Blam.Progress.Mission.Completion.` at the last dot: the trailing segment is the
+mission id, whatever precedes it is the set name. A set the game adds later
+becomes its own column by itself and is named under the table. Reports of extra
+columns are welcome - that is how this list grows.
+
 A 100% save carried 185 distinct tags: 42 insertion points, 13 terminals,
 43 skulls and the completion sets above.
 

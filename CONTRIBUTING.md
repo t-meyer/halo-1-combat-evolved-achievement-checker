@@ -13,10 +13,15 @@ worth having.
 2. **Skull and terminal lists.** The current lists come from a single save. If
    your save shows a `Blam.Skull.*` or `Blam.Terminal.*` tag that is not in
    `docs/SAVE-FORMAT.md`, say so.
-3. **Achievement to requirement mapping.** The end goal is "you still need the
+3. **Does LASO have its own completion set?** If you have finished missions on
+   the LASO playlist, run `-Raw` and look for a `Completion.<something>.<mission
+   id>` family other than the six known ones. The tool prints any extra set it
+   finds under the table; tell us the name either way, "there is none" is also
+   an answer.
+4. **Achievement to requirement mapping.** The end goal is "you still need the
    Bandana skull on The Library" instead of a matrix. That needs all 58
    achievements with the missions and skulls each one depends on.
-4. **Unrecognised tags.** If the checker prints an "Unrecognised tags" block after
+5. **Unrecognised tags.** If the checker prints an "Unrecognised tags" block after
    a game patch, open an issue with that list.
 
 ## Ground rules
