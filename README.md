@@ -56,6 +56,12 @@ which ones you have not. This tool reads it and prints the list:
 `x` means done, `.` means not done. The last line names the mission you still
 owe. That is the whole point.
 
+Here it is against a real save, with the account line blacked out:
+
+![The tool run against a real save: a mission table with Easy, Normal, Heroic,
+Legendary, Remix, Remix deathless and LASO columns, a completed row, the
+missions still missing per column, 45 skulls and 13 terminals](docs/example-output.png)
+
 **It only ever reads.** Your save is never changed, moved or deleted. Your Xbox
 account is not touched, and nothing is sent anywhere.
 
@@ -163,7 +169,7 @@ werden"*.
 .\halo-1-combat-evolved-achievement-checker.ps1 -Section Missions -Json progress.json
 
 # one specific Xbox account on a shared PC
-.\halo-1-combat-evolved-achievement-checker.ps1 -Account 2533274833271139
+.\halo-1-combat-evolved-achievement-checker.ps1 -Account 2533274812345678
 
 # a save folder copied off another PC, or a single save blob
 .\halo-1-combat-evolved-achievement-checker.ps1 -SavePath D:\backup\wgs
