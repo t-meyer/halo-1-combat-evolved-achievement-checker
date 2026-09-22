@@ -1,7 +1,8 @@
 # Halo 1: Combat Evolved Achievement Checker
 
 **Your achievement is stuck at 92% and the game will not tell you which mission
-is missing. This finds it.**
+is missing. This finds it — for `Mix Master`, for `MYTHIC`, for every difficulty
+including LASO.**
 
 For **Halo: Campaign Evolved** — the Halo 1 / Combat Evolved remake. Windows
 only, nothing to install, and it never changes your save.
@@ -12,6 +13,8 @@ only, nothing to install, and it never changes your save.
   mission is left
 - You finished the campaign, but the achievement did not pop
 - `Mix Master` is stuck and replaying missions at random changes nothing
+- `MYTHIC` will not pop and you have lost track of which missions you already
+  cleared on LASO
 - You want to know which missions you still owe on Heroic, on Legendary, on
   Remix, or without dying
 - You are not sure which skulls and terminals you already have
@@ -39,14 +42,14 @@ That file knows exactly which missions you have done, on which difficulty, and
 which ones you have not. This tool reads it and prints the list:
 
 ```
-#   Mission                          Easy    Normal  Heroic  Legend  Remix   Rmx-DL
-----------------------------------------------------------------------------------
-1   The Pillar of Autumn             x       x       x       x       x       x
-2   Halo                             x       x       x       x       x       x
-3   The Truth and Reconciliation     x       x       x       x       x       .
+#   Mission                          Easy    Normal  Heroic  Legend  Remix   Rmx-DL  LASO
+------------------------------------------------------------------------------------------
+1   The Pillar of Autumn             x       x       x       x       x       x       x
+2   Halo                             x       x       x       x       x       x       x
+3   The Truth and Reconciliation     x       x       x       x       x       .       .
 ...
-----------------------------------------------------------------------------------
-    completed                        13/13   13/13   11/13   11/13   13/13   12/13
+------------------------------------------------------------------------------------------
+    completed                        13/13   13/13   11/13   11/13   13/13   12/13   2/13
   Remix.Deathless  still missing: The Truth and Reconciliation [a50]
 ```
 
@@ -98,7 +101,8 @@ account is not touched, and nothing is sent anywhere.
 ## Reading the result
 
 - Each row is one mission, each column one difficulty. `Rmx-DL` is Remix
-  deathless — the one behind `Mix Master`.
+  deathless, the one behind `Mix Master`; `LASO` is Legendary with all skulls
+  on, the one behind `MYTHIC`.
 - The `completed` row counts the `x` per column.
 - When a column is missing four missions or fewer, you get a `still missing:`
   line underneath that names them. That is your to-do list.
@@ -106,11 +110,9 @@ account is not touched, and nothing is sent anywhere.
 - The columns are read out of the save, not built into the tool. If a game
   patch ever adds a completion set, it gets its own column and is named under
   the table.
-- **A LASO column may or may not be possible — that is still open.** No save
-  from a finished LASO run has been examined yet. If the game records one, it
-  appears here by itself; if it only records `Legendary` and `Remix.Deathless`,
-  it cannot be told apart from two ordinary runs. See
-  [`docs/SAVE-FORMAT.md`](docs/SAVE-FORMAT.md) for how to settle it.
+- The `LASO` column only appears once you have finished at least one mission on
+  the LASO playlist — until then the save has nothing to show. Same for every
+  other column: a set the game never wrote does not exist in the file.
 
 If several people play on the same PC, every Xbox account gets its own table,
 with the gamertag in the heading.
@@ -136,7 +138,8 @@ mission table itself does not. Copy just the table when you post it somewhere.
 Kurzfassung für deutschsprachige Spieler: Wenn ein Achievement bei 92 % hängt
 und das Spiel nicht verrät, **welche Mission** noch fehlt, liest dieses Werkzeug
 deinen Spielstand aus und nennt sie beim Namen — auch für Heroisch, Legendär,
-Remix und "ohne zu sterben", dazu Schädel und Terminals.
+Remix, "ohne zu sterben" und LASO (Legendär mit allen Schädeln, das Achievement
+`MYTHIC`), dazu Schädel und Terminals.
 
 Du brauchst einen Windows-PC, auf dem du gespielt hast. Lade oben über den
 grünen **Code**-Knopf das ZIP herunter, entpacke es, öffne den Ordner, halte

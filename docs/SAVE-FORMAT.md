@@ -91,30 +91,37 @@ Normal, only 11 of the 13 `Heroic` tags existed.
 | `Blam.Progress.Mission.Completion.Legendary.<id>` | … on Legendary |
 | `Blam.Progress.Mission.Completion.Remix.<id>` | Remix run finished |
 | `Blam.Progress.Mission.Completion.Remix.Deathless.<id>` | Remix run finished without dying |
+| `Blam.Progress.Mission.Completion.LASO.<id>` | finished on the LASO playlist - Legendary, all skulls on |
 | `Blam.Progress.Mission.Completion.unlock_<id>` | mission unlocked in the menu |
 | `Blam.Skull.<SkullName>` | skull collected |
 | `Blam.Terminal.terminal_<id>` | terminal found |
 | `Blam.Progress.Mission.InsertionPoints.ins_<id>_<name>` | checkpoint / insertion point reached |
 
-### Completion sets, and the open LASO question
-
-Six sets have been observed:
+### Seven completion sets, LASO included
 
 ```
-Easy  Heroic  Legendary  Normal  Remix  Remix.Deathless
+Easy  Heroic  Legendary  Normal  Remix  Remix.Deathless  LASO
 ```
 
-Whether the LASO playlist (Legendary, all skulls on) adds a seventh is **not
-settled**. The save measured here belongs to a player who has never started a
-LASO run, and a tag exists only once it is earned - so the absence of a LASO set
-in this file is exactly what you would expect either way. It proves nothing.
+`LASO` is confirmed: finishing a mission on the LASO playlist writes
+`Blam.Progress.Mission.Completion.LASO.<mission id>` into `Progress`, one tag
+per mission, exactly like the other six. Two finished LASO missions took a save
+from 185 tags to 187 and produced a `2/13` column.
 
-What the same measurement does establish, independent of LASO:
+It took a while to establish, and the wrong turns are worth recording:
 
-- The two ~1 MB `CoreSave` blobs contain **zero** `Blam.` tags. Every one of the
-  185 tags comes from the 19 KB `Progress` blob.
-- The only tag matching `laso|mythic` anywhere in the save is `Blam.Skull.Mythic`
-  - the skull of that name, not a progress record.
+- A save from a player who had never run LASO has no `LASO` set, which proves
+  nothing either way - a tag exists only once it is earned. Absence is only
+  evidence when the thing has been attempted.
+- `IsLASO` turns up in the checkpoint containers and is **not** the answer. It
+  is a field name in the game-variant schema described below, present whether
+  or not the flag is ever set.
+
+The reader does not hardcode this list. It splits everything after
+`Blam.Progress.Mission.Completion.` at the last dot: the trailing segment is the
+mission id, whatever precedes it is the set name. That is why `LASO` appeared as
+its own column the first time a save contained it, with no code change - and why
+an eighth set would do the same.
 
 ### The checkpoint containers carry a game-variant schema
 
@@ -156,40 +163,21 @@ Nothing here is per-mission and nothing here is permanent: these containers are
 rewritten as you play. A LASO column would need a durable per-mission record,
 and the only place that could live is `Progress`.
 
-### How to settle it
+### Confirming a set yourself
 
-Export the tag list, finish one mission on the LASO playlist, export again and
-compare:
+`Debug-SaveTags.ps1` exists for this. Export, play, export again against the
+first file:
 
 ```powershell
 .\Debug-SaveTags.ps1 -Strings -Export before.txt
-# ... play one LASO mission to completion ...
+# ... finish one mission in the mode you are testing ...
 .\Debug-SaveTags.ps1 -Strings -Export after.txt -Baseline before.txt
 ```
 
-`-Strings` matters here. Without it only names beginning with `Blam.` are read,
-and a playlist or modifier flag may well be an ordinary GVAS property under a
-name no tag pattern matches. In that mode each container is read both as
-single-byte and as UTF-16, since GVAS mixes the two, and the `CoreSave` blobs
-are included - they hold no `Blam.` tags but are a megabyte each.
-
-Three outcomes:
-
-- A new `Completion.<set>.<mission id>` family appears - LASO has its own set,
-  and the reader picks it up as a column without a code change.
-- Only `Legendary` and `Remix.Deathless` entries appear for that mission - LASO
-  is not recorded as such.
-- Nothing appears at all - the run was not registered.
-
-If the second case holds, LASO cannot be derived from the save and no tool can
-honestly show it. A LASO run would set `Legendary` and `Remix.Deathless`, but so
-does finishing a mission on Legendary one evening and deathless in Remix the
-next: identical tags, different achievements. The file never records which
-skulls were active during a completion, and that is the deciding half of the
-LASO condition.
-
-What is certain either way is that the MYTHIC achievement percentage from Xbox
-Live has the same defect as `Mix Master`: it counts to 13 without naming which.
+`-Strings` collects every printable run rather than only `Blam.` names, reading
+each container both as single-byte and as UTF-16 since GVAS mixes the two.
+`-Inspect <regex>` dumps the bytes around a name as hex and text, which is how
+the variant schema above was read.
 
 ### Tag inventory
 
