@@ -23,17 +23,22 @@ Then this is for you.
 
 ## The problem
 
-Some achievements need all thirteen campaign missions. `Mix Master`, for
-example: finish the whole Remix campaign without dying once.
+Two achievements ask for all thirteen campaign missions, and both go wrong in
+exactly the same way:
 
-You play, you die a few times, you replay. At some point the game says **92%**.
-So twelve missions are done and one is not — but the game never says *which*
-one. Neither does the Xbox achievement list, and that is not an oversight you
-can work around: Xbox stores this achievement as a single number for the whole
-campaign, so there is genuinely nothing more for it to show.
+- **`Mix Master`** — finish the whole Remix campaign without dying once.
+- **`MYTHIC`** — finish every mission on **LASO**: Legendary difficulty with
+  every skull switched on.
 
-The usual advice is to replay all thirteen missions until the number moves.
-That is an entire evening, or several.
+You play, you die somewhere, you replay that mission. At some point the game
+says **92%**. So twelve missions counted and one did not — but the game never
+says *which*. Neither does the Xbox achievement list, and that is not an
+oversight you can work around: Xbox stores each of these as a single number for
+the whole campaign, so there is genuinely nothing more for it to show.
+
+The usual advice is to replay all thirteen missions until the number moves. For
+`Mix Master` that is an evening, or several. For `MYTHIC` it is considerably
+worse — nobody replays thirteen LASO missions on the off chance.
 
 ## What this does
 
@@ -70,39 +75,57 @@ account is not touched, and nothing is sent anywhere.
 - A Windows PC **on which you have played the game**. If you only played on an
   Xbox console, your save lives in Microsoft's cloud and there is no file on
   your PC to read — this cannot help you then.
-- Nothing else. PowerShell is already part of every Windows 10 and 11.
-- No installation, no account, no admin rights, no API key.
+- Nothing else. PowerShell is already part of every Windows 10 and 11, so
+  there is nothing to download besides this.
+- No installation, no account, no administrator rights, no API key, and no
+  experience with PowerShell.
+
+## Which file do I run?
+
+The download contains three files ending in `.ps1`. You only need the first.
+
+| File | What it is |
+| --- | --- |
+| **`halo-1-combat-evolved-achievement-checker.ps1`** | **This is the one.** Reads your save and prints the table. |
+| `Get-HaloAchievements.ps1` | Optional extra, lists all 58 achievements from Xbox Live. It needs a free key, so it asks for one. If your window says `OpenXBL API key:`, you started this file by mistake — press **Ctrl+C** and start the right one. |
+| `Debug-SaveTags.ps1` | For people taking the save format apart. You do not need it. |
 
 ## Step by step
 
+No experience needed. Nothing gets installed, nothing is changed on your PC.
+
 1. Click the green **Code** button at the top of this page, then
    **Download ZIP**.
-2. Right-click the downloaded file, choose **Extract All**, and confirm.
-3. Open the folder you just extracted. Hold **Shift**, right-click on an empty
-   spot inside the folder, and choose **Open PowerShell window here** (on
-   Windows 11 it may read **Open in Terminal**).
-4. Type this and press Enter:
+
+2. Find the downloaded file, right-click it, choose **Extract All**, and
+   confirm. You now have a folder with the files in it.
+
+3. Open that folder. Click into the **address bar** at the top of the window —
+   the strip showing the folder path — type `powershell` over it and press
+   **Enter**.
+
+   A dark window opens, already pointing at the right folder. That is all the
+   address-bar trick does; it is the most reliable way, because the right-click
+   menu does not offer PowerShell on every Windows.
+
+4. Type `.\halo`, press the **Tab** key — Windows completes the long file name
+   for you — then press **Enter**.
+
+   The full command is:
 
    ```powershell
    .\halo-1-combat-evolved-achievement-checker.ps1
    ```
 
-   You do not have to type all of it: type `.\halo` and press the **Tab** key,
-   Windows completes the rest.
+5. Read the table. Done. If instead you got a red error message, the next
+   section has it.
 
-5. If Windows refuses to run it, the file is marked as "downloaded from the
-   internet". Run this once, then repeat step 4:
-
-   ```powershell
-   Unblock-File .\halo-1-combat-evolved-achievement-checker.ps1
-   ```
-
-6. Read the table. Done.
-
-> **Run the file — do not copy the script text into the PowerShell window.**
-> Pasted code does not know where it lives, so it stops immediately with
-> *"Cannot bind argument to parameter 'Path' because it is an empty string"* /
-> *"Das Argument kann nicht an den Parameter 'Path' gebunden werden"*.
+> **Two things that trip people up.** Do not run this as Administrator — it is
+> not needed, and it starts you in the wrong folder. And run the *file*; do not
+> copy the script text into the window. Pasted code does not know where it
+> lives and stops with *"Cannot bind argument to parameter 'Path' because it is
+> an empty string"* / *"Das Argument kann nicht an den Parameter 'Path'
+> gebunden werden"*.
 
 ## Reading the result
 
@@ -125,14 +148,18 @@ with the gamertag in the heading.
 
 ## Something went wrong
 
-| What you see | What it means |
+| What you see | What to do |
 | --- | --- |
-| `No Halo: Campaign Evolved save found` | The game was never played on this PC, or only on a console. There is no local file to read. |
-| `Cannot bind argument to parameter 'Path'` | You pasted the script text into the window instead of running the file. See the box above. |
-| Windows refuses to run the script | Run `Unblock-File` as shown in step 5. |
-| `Unrecognised tags` at the end | The game was patched and writes something new. The table is still correct; an issue with that list is welcome. |
+| **"running scripts is disabled on this system"** / *"Die Ausfuehrung von Skripts ist auf diesem System deaktiviert"* | Windows blocks scripts by default. This runs it once without changing that setting: `powershell -ExecutionPolicy Bypass -File .\halo-1-combat-evolved-achievement-checker.ps1` |
+| **"...is not digitally signed"** or a warning that the file came from the internet | Run `Unblock-File .\halo-1-combat-evolved-achievement-checker.ps1` once, then try again. It only removes the "downloaded" mark. |
+| **`OpenXBL API key:`** and it waits for input | You started the wrong file. Press **Ctrl+C**, then run the one from the table above. |
+| **`No Halo: Campaign Evolved save found`** | The game was never played on this PC, or only on an Xbox console. In that case the save is in Microsoft's cloud and there is no file here to read. |
+| **`Cannot bind argument to parameter 'Path'`** | You pasted the script text into the window instead of running the file. See the box above. |
+| **`The term '.\halo-1-...' is not recognized`** | The window is not in the right folder. Close it and redo step 3 from inside the extracted folder. |
+| **`Unrecognised tags`** at the end | Harmless. The game was patched and writes something new; the table above it is still correct. An issue with that list is welcome. |
 
-Nothing here can damage your save — the tool contains no code that writes to it.
+Nothing here can damage your save — the tool contains no code that writes to
+it. If you are stuck, open an issue and paste what the window says.
 
 ## Sharing your result
 
@@ -147,17 +174,34 @@ deinen Spielstand aus und nennt sie beim Namen — auch für Heroisch, Legendär
 Remix, "ohne zu sterben" und LASO (Legendär mit allen Schädeln, das Achievement
 `MYTHIC`), dazu Schädel und Terminals.
 
-Du brauchst einen Windows-PC, auf dem du gespielt hast. Lade oben über den
-grünen **Code**-Knopf das ZIP herunter, entpacke es, öffne den Ordner, halte
-**Umschalt** gedrückt, rechtsklicke auf eine freie Stelle, wähle
-**PowerShell-Fenster hier öffnen** und tippe `.\halo` gefolgt von der
-**Tab**-Taste. Falls Windows sich weigert, einmal `Unblock-File` ausführen wie
-in Schritt 5 oben.
+Du brauchst nur einen Windows-PC, auf dem du das Spiel gespielt hast. Es wird
+nichts installiert und nichts an deinem Rechner verändert.
 
-Dein Spielstand wird ausschließlich gelesen, niemals verändert. Wichtig: die
-Datei **ausführen**, nicht den Skripttext ins Fenster hineinkopieren — sonst
-kommt die Meldung *"Das Argument kann nicht an den Parameter 'Path' gebunden
-werden"*.
+1. Oben über den grünen **Code**-Knopf das ZIP herunterladen.
+2. Rechtsklick auf die Datei, **Alle extrahieren**, bestätigen.
+3. Den entpackten Ordner öffnen. Oben in die **Adressleiste** klicken, dort
+   `powershell` eintippen und **Enter** drücken — es öffnet sich ein dunkles
+   Fenster, das bereits im richtigen Ordner steht.
+4. `.\halo` tippen, **Tab** drücken (Windows vervollständigt den langen
+   Dateinamen), **Enter**.
+
+Von den drei `.ps1`-Dateien brauchst du nur
+`halo-1-combat-evolved-achievement-checker.ps1`. Fragt das Fenster nach einem
+`OpenXBL API key`, hast du die falsche erwischt: **Strg+C** drücken und die
+richtige starten.
+
+Weigert sich Windows mit *"Die Ausführung von Skripts ist auf diesem System
+deaktiviert"*, startet dieser Befehl das Skript einmalig, ohne eine Einstellung
+zu ändern:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\halo-1-combat-evolved-achievement-checker.ps1
+```
+
+Dein Spielstand wird ausschließlich gelesen, niemals verändert. Zwei Stolper-
+steine: **nicht als Administrator** starten, und die Datei **ausführen** statt
+den Skripttext ins Fenster zu kopieren — sonst kommt *"Das Argument kann nicht
+an den Parameter 'Path' gebunden werden"*.
 
 ## More options
 
