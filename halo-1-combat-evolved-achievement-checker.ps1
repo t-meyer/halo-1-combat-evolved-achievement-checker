@@ -30,6 +30,10 @@
 .PARAMETER Raw
     Print every gameplay tag found, unparsed.
 
+.PARAMETER DeepScan
+    Search the whole user profile and Steam for the save instead of the
+    known locations only. Slow; use it when autodetection finds nothing.
+
 .EXAMPLE
     .\halo-1-combat-evolved-achievement-checker.ps1
     Autodetect and print everything.
@@ -48,7 +52,8 @@ param(
     [ValidateSet('All', 'Missions', 'Skulls', 'Terminals')]
     [string]$Section = 'All',
     [string]$Json,
-    [switch]$Raw
+    [switch]$Raw,
+    [switch]$DeepScan
 )
 
 $ErrorActionPreference = 'Stop'
@@ -118,30 +123,224 @@ function Get-MissionTable {
 
 # --- save discovery ---------------------------------------------------------
 
+$script:SearchLog = [System.Collections.Generic.List[string]]::new()
+
+function Write-SearchLog {
+    param([string]$Message)
+    $script:SearchLog.Add($Message)
+    Write-Verbose $Message
+}
+
+# Output of a failed search ends up pasted into public issues, so the Windows
+# user name and XUIDs are masked.
+function Format-SafePath {
+    param([string]$Path)
+    $p = $Path
+    if ($env:USERPROFILE) { $p = $p -replace [regex]::Escape($env:USERPROFILE), '%USERPROFILE%' }
+    $p = $p -replace '(?i)(\\userdata\\)\d+', '$1<steamid>'
+    return ($p -replace '\b[0-9A-Fa-f]{16}_', '<xuid>_')
+}
+
+function Read-SaveBytes {
+    param([string]$Path)
+    # The running game keeps its save open; without FileShare.ReadWrite the
+    # read fails with "being used by another process".
+    $fs = [IO.File]::Open($Path, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite)
+    try {
+        $buf  = New-Object byte[] $fs.Length
+        $read = 0
+        while ($read -lt $buf.Length) {
+            $n = $fs.Read($buf, $read, $buf.Length - $read)
+            if ($n -le 0) { break }
+            $read += $n
+        }
+        return ,$buf
+    } finally {
+        $fs.Dispose()
+    }
+}
+
+function Get-ProgressScore {
+    param([IO.FileInfo]$File)
+    try {
+        $text = [Text.Encoding]::ASCII.GetString((Read-SaveBytes $File.FullName))
+    } catch {
+        Write-SearchLog "  unreadable: $(Format-SafePath $File.FullName) ($($_.Exception.Message))"
+        return 0
+    }
+    return [regex]::Matches($text, 'Blam\.(Progress|Skull|Terminal)\.').Count
+}
+
+function Get-WgsCandidates {
+    $packages = Join-Path $env:LOCALAPPDATA 'Packages'
+    $roots    = [System.Collections.Generic.List[string]]::new()
+
+    $direct = Join-Path $packages "$PackageFamilyName\SystemAppData\wgs"
+    if (Test-Path $direct) {
+        Write-SearchLog "[found] Xbox app package folder: $(Format-SafePath $direct)"
+        $roots.Add($direct)
+    } else {
+        Write-SearchLog "[--]    Xbox app package folder missing: $(Format-SafePath $direct)"
+    }
+
+    # The package family name may differ between editions or regions, so every
+    # package is checked for the game's name inside containers.index.
+    $scanned = 0
+    foreach ($pkg in Get-ChildItem $packages -Directory -ErrorAction SilentlyContinue) {
+        $wgs = Join-Path $pkg.FullName 'SystemAppData\wgs'
+        if (-not (Test-Path $wgs) -or $roots -contains $wgs) { continue }
+        $scanned++
+        foreach ($index in Get-ChildItem $wgs -Filter 'containers.index' -Recurse -File -ErrorAction SilentlyContinue) {
+            try { $bytes = Read-SaveBytes $index.FullName } catch { continue }
+            $text = [Text.Encoding]::Unicode.GetString($bytes) + [Text.Encoding]::ASCII.GetString($bytes)
+            if ($text -match 'HaloCampaignEvolved') {
+                Write-SearchLog "[found] Halo package under another name: $($pkg.Name)"
+                $roots.Add($wgs)
+                break
+            }
+        }
+    }
+    Write-SearchLog "        $scanned other packages with Connected Storage checked"
+
+    $result = @()
+    foreach ($wgs in $roots) {
+        $best = $null; $bestScore = 0
+        $files = Get-ChildItem $wgs -Recurse -File -ErrorAction SilentlyContinue |
+                 Where-Object { $_.Name -notmatch '^(containers\.index|container\.\d+)$' -and $_.Length -lt 20MB }
+        foreach ($f in $files) {
+            $score = Get-ProgressScore $f
+            if ($score -gt $bestScore -or ($score -eq $bestScore -and $score -gt 0 -and $f.LastWriteTime -gt $best.LastWriteTime)) {
+                $best = $f; $bestScore = $score
+            }
+        }
+        $accounts = @(Get-ChildItem $wgs -Directory -ErrorAction SilentlyContinue).Count
+        if ($best) {
+            Write-SearchLog "        $accounts account folder(s), progress blob with $bestScore tags, last written $($best.LastWriteTime)"
+            $result += [pscustomobject]@{ Path = $wgs; File = $best; Score = $bestScore; Source = 'Xbox app / Game Pass' }
+        } else {
+            Write-SearchLog "[empty] $accounts account folder(s), $(@($files).Count) file(s), none holds progress tags"
+        }
+    }
+    return $result
+}
+
+function Get-OtherSaveRoots {
+    param([switch]$Deep)
+
+    $roots   = [System.Collections.Generic.List[string]]::new()
+    $userDir = $env:USERPROFILE
+    $named   = '(?i)halo|meteorite|343'
+
+    $steam = $null
+    try { $steam = (Get-ItemProperty 'HKCU:\Software\Valve\Steam' -ErrorAction Stop).SteamPath } catch { }
+    if (-not $steam -and ${env:ProgramFiles(x86)}) { $steam = Join-Path ${env:ProgramFiles(x86)} 'Steam' }
+    $steamUser = if ($steam) { Join-Path ($steam -replace '/', '\') 'userdata' } else { $null }
+    if ($steamUser -and (Test-Path $steamUser)) {
+        Write-SearchLog "[found] Steam userdata: $(Format-SafePath $steamUser)"
+        $roots.Add($steamUser)
+    } else {
+        Write-SearchLog '[--]    Steam not installed (no userdata folder)'
+    }
+
+    $meteorite = Join-Path $env:LOCALAPPDATA 'Meteorite'
+    if (Test-Path $meteorite) {
+        Write-SearchLog "[found] game data folder: $(Format-SafePath $meteorite) - the game has run under this Windows account"
+    } else {
+        Write-SearchLog "[--]    game data folder missing: $(Format-SafePath $meteorite) - the game has never run under this Windows account"
+    }
+
+    $bases = @($env:LOCALAPPDATA, $env:APPDATA, (Join-Path $userDir 'AppData\LocalLow'),
+               (Join-Path $userDir 'Saved Games'), (Join-Path $userDir 'Documents\My Games'),
+               [Environment]::GetFolderPath('MyDocuments')) |
+             Where-Object { $_ -and (Test-Path $_) } | Select-Object -Unique
+
+    if ($Deep) {
+        foreach ($b in $bases) { $roots.Add($b) }
+    } else {
+        foreach ($b in $bases) {
+            Get-ChildItem $b -Directory -ErrorAction SilentlyContinue |
+                Where-Object { $_.Name -match $named } |
+                ForEach-Object { $roots.Add($_.FullName) }
+        }
+    }
+    return $roots
+}
+
+function Get-LooseCandidates {
+    param([string[]]$Roots, [string[]]$Skip, [switch]$Deep)
+
+    $skipExt = '(?i)\.(film|dll|exe|pak|ucas|utoc|png|jpg|jpeg|dds|log|ini|mp4|webm|db|sqlite|ldb|cache)$'
+    $result  = @()
+    foreach ($root in $Roots) {
+        if ($Deep) { Write-Host "  scanning $(Format-SafePath $root) ..." -ForegroundColor DarkGray }
+        $files = Get-ChildItem $root -Recurse -File -ErrorAction SilentlyContinue |
+                 Where-Object { $_.Length -ge 64 -and $_.Length -le 5MB -and $_.Name -notmatch $skipExt }
+        $count = 0
+        foreach ($f in $files) {
+            $count++
+            $inWgs = $false
+            foreach ($s in $Skip) { if ($f.FullName.StartsWith($s, [StringComparison]::OrdinalIgnoreCase)) { $inWgs = $true; break } }
+            if ($inWgs) { continue }
+            $score = Get-ProgressScore $f
+            if ($score -gt 0) {
+                Write-SearchLog "[found] $score progress tags in $(Format-SafePath $f.FullName)"
+                $result += [pscustomobject]@{ Path = $f.FullName; File = $f; Score = $score; Source = 'loose save file' }
+            }
+        }
+        Write-SearchLog "        $count file(s) checked under $(Format-SafePath $root)"
+    }
+    return $result
+}
+
+function Write-SearchReport {
+    $admin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
+                 [Security.Principal.WindowsBuiltInRole]::Administrator)
+    Write-Host ''
+    Write-Host 'No Halo: Campaign Evolved save found. What was checked:' -ForegroundColor Red
+    Write-Host ("  PowerShell {0}, {1}, running as administrator: {2}" -f $PSVersionTable.PSVersion,
+                $(if ([Environment]::Is64BitProcess) { '64-bit' } else { '32-bit' }), $admin) -ForegroundColor DarkGray
+    foreach ($line in $script:SearchLog) { Write-Host "  $line" -ForegroundColor DarkGray }
+    Write-Host ''
+    Write-Host 'What to try:' -ForegroundColor Yellow
+    if (-not (Test-Path (Join-Path $env:LOCALAPPDATA 'Meteorite'))) {
+        Write-Host '  - The game has never started under the Windows account this window runs as.' -ForegroundColor Yellow
+        Write-Host '    If you opened PowerShell "as administrator" with a different account, open it normally instead.' -ForegroundColor Yellow
+    }
+    Write-Host '  - Run again with -DeepScan. It searches your whole profile and Steam for the save (takes a few minutes).' -ForegroundColor Yellow
+    Write-Host '  - If you know where the save is, pass it with -SavePath.' -ForegroundColor Yellow
+    Write-Host '  - Still nothing: open an issue and paste everything above. User name and XUID are masked.' -ForegroundColor Yellow
+    Write-Host ''
+}
+
 function Find-SaveRoot {
-    param([string]$Explicit)
+    param([string]$Explicit, [switch]$Deep)
 
     if ($Explicit) {
         if (-not (Test-Path $Explicit)) { throw "Path not found: $Explicit" }
         return (Resolve-Path $Explicit).Path
     }
 
-    $packages = Join-Path $env:LOCALAPPDATA 'Packages'
-    $direct   = Join-Path $packages "$PackageFamilyName\SystemAppData\wgs"
-    if (Test-Path $direct) { return $direct }
+    $candidates = @(Get-WgsCandidates)
+    $skip       = @($candidates | ForEach-Object { $_.Path })
+    $loose      = @(Get-LooseCandidates -Roots (Get-OtherSaveRoots -Deep:$Deep) -Skip $skip -Deep:$Deep)
+    $candidates = @($candidates) + @($loose)
 
-    Write-Verbose 'Default package path missing, scanning all Xbox packages.'
-    foreach ($pkg in Get-ChildItem $packages -Directory -ErrorAction SilentlyContinue) {
-        $wgs = Join-Path $pkg.FullName 'SystemAppData\wgs'
-        if (-not (Test-Path $wgs)) { continue }
-        $index = Get-ChildItem $wgs -Filter 'containers.index' -Recurse -File -ErrorAction SilentlyContinue |
-                 Select-Object -First 1
-        if (-not $index) { continue }
-        $text = [Text.Encoding]::Unicode.GetString([IO.File]::ReadAllBytes($index.FullName))
-        if ($text -match 'HaloCampaignEvolved') { return $wgs }
+    if ($candidates.Count -eq 0) {
+        Write-SearchReport
+        throw 'No Halo: Campaign Evolved save found (see the list above).'
     }
 
-    throw 'No Halo: Campaign Evolved save found. Either the game was never played on this PC, or it was only played on an Xbox console (in which case the save lives in the cloud only).'
+    $pick = $candidates | Sort-Object { $_.File.LastWriteTime } -Descending | Select-Object -First 1
+    if ($candidates.Count -gt 1) {
+        Write-Host ''
+        Write-Host 'Several saves found, using the most recently written one:' -ForegroundColor Yellow
+        foreach ($c in $candidates | Sort-Object { $_.File.LastWriteTime } -Descending) {
+            $mark = if ($c -eq $pick) { '*' } else { ' ' }
+            Write-Host ("  {0} {1:yyyy-MM-dd HH:mm}  {2,-20} {3}" -f $mark, $c.File.LastWriteTime, $c.Source, (Format-SafePath $c.Path)) -ForegroundColor Yellow
+        }
+        Write-Host '  Pick another one with -SavePath.' -ForegroundColor Yellow
+    }
+    return $pick.Path
 }
 
 # --- gamertag lookup --------------------------------------------------------
@@ -168,7 +367,7 @@ function Get-TagsFromFile {
     # Tags are stored as plain ASCII inside the GVAS blob. Pulling them out
     # with a regex avoids having to implement a full GVAS parser, and survives
     # schema changes between game patches.
-    $text = [Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes($Path))
+    $text = [Text.Encoding]::ASCII.GetString((Read-SaveBytes $Path))
     return [regex]::Matches($text, 'Blam\.[A-Za-z0-9_.]+') |
            ForEach-Object { $_.Value } |
            Sort-Object -Unique
@@ -320,13 +519,13 @@ function Write-MissionMatrix {
 # --- main -------------------------------------------------------------------
 
 $missions = Get-MissionTable
-$root     = Find-SaveRoot -Explicit $SavePath
+$root     = Find-SaveRoot -Explicit $SavePath -Deep:$DeepScan
 $tagMap   = Get-GamertagMap
 $saves    = @(Get-AccountSaves -Root $root)
 
 Write-Host ''
 Write-Host 'Halo 1: Combat Evolved Achievement Checker - Campaign Evolved save reader' -ForegroundColor Cyan
-Write-Host "source: $root" -ForegroundColor DarkGray
+Write-Host "source: $(Format-SafePath $root)" -ForegroundColor DarkGray
 
 if ($saves.Count -eq 0) { Write-Host 'No save data found in that location.' -ForegroundColor Red; return }
 if ($Account) { $saves = @($saves | Where-Object { $_.Xuid -eq $Account }) }
