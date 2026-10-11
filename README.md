@@ -153,7 +153,7 @@ with the gamertag in the heading.
 | **"running scripts is disabled on this system"** / *"Die Ausfuehrung von Skripts ist auf diesem System deaktiviert"* | Windows blocks scripts by default. This runs it once without changing that setting: `powershell -ExecutionPolicy Bypass -File .\halo-1-combat-evolved-achievement-checker.ps1` |
 | **"...is not digitally signed"** or a warning that the file came from the internet | Run `Unblock-File .\halo-1-combat-evolved-achievement-checker.ps1` once, then try again. It only removes the "downloaded" mark. |
 | **`OpenXBL API key:`** and it waits for input | You started the wrong file. Press **Ctrl+C**, then run the one from the table above. |
-| **`No Halo: Campaign Evolved save found`** | The game was never played on this PC, or only on an Xbox console. In that case the save is in Microsoft's cloud and there is no file here to read. |
+| **`No Halo: Campaign Evolved save found`** | The game was never played on this PC, or only on an Xbox console. In that case the save is in Microsoft's cloud and there is no file here to read. Below the message the tool lists every place it checked. If you are sure you played here, run it again with `-DeepScan`, which searches your whole profile and Steam (takes a few minutes). |
 | **`Cannot bind argument to parameter 'Path'`** | You pasted the script text into the window instead of running the file. See the box above. |
 | **`The term '.\halo-1-...' is not recognized`** | The window is not in the right folder. Close it and redo step 3 from inside the extracted folder. |
 | **`Unrecognised tags`** at the end | Harmless. The game was patched and writes something new; the table above it is still correct. An issue with that list is welcome. |
@@ -203,6 +203,14 @@ steine: **nicht als Administrator** starten, und die Datei **ausführen** statt
 den Skripttext ins Fenster zu kopieren — sonst kommt *"Das Argument kann nicht
 an den Parameter 'Path' gebunden werden"*.
 
+Findet das Skript keinen Spielstand, zeigt `-Verbose` jeden Suchschritt an,
+und `-DeepScan` durchsucht zusätzlich das ganze Benutzerprofil und Steam. Mit
+`*> suchlog.txt` am Ende landet die Ausgabe in einer Datei:
+
+```powershell
+.\halo-1-combat-evolved-achievement-checker.ps1 -Verbose *> suchlog.txt
+```
+
 ## More options
 
 ```powershell
@@ -220,7 +228,31 @@ an den Parameter 'Path' gebunden werden"*.
 
 # every gameplay tag in the file, unparsed
 .\halo-1-combat-evolved-achievement-checker.ps1 -Raw
+
+# show every step of the save search, also when a save is found
+.\halo-1-combat-evolved-achievement-checker.ps1 -Verbose
+
+# search the whole profile and Steam when autodetection finds nothing
+.\halo-1-combat-evolved-achievement-checker.ps1 -DeepScan -Verbose
 ```
+
+### Search log
+
+Without options the search log is printed only when no save is found. With
+`-Verbose` every step is printed as it happens: which package folders and Steam
+folders were checked, how many files each held, and which one was picked. Your
+Windows user name, Steam id and XUID are masked in that output.
+
+The log is not written to a file by itself. To take it to another PC or attach
+it to an issue, redirect it:
+
+```powershell
+.\halo-1-combat-evolved-achievement-checker.ps1 -Verbose *> search-log.txt
+```
+
+`search-log.txt` then sits in the folder the window is pointing at. The mission
+table further down still shows your gamertag in its heading, so cut that out
+before posting the file.
 
 `Get-Help .\halo-1-combat-evolved-achievement-checker.ps1 -Full` lists all
 parameters.
